@@ -65,17 +65,7 @@
             </div>
         </div>
 
-        <!-- Instructions -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mt-4">
-            <h2 class="text-lg font-bold text-gray-800 mb-3">📱 Install as App</h2>
-            <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
-                <li>Open this page in <strong>Safari</strong> on your iPhone</li>
-                <li>Tap the <strong>Share button</strong> (square with arrow)</li>
-                <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-                <li>Tap <strong>"Add"</strong> - it will appear as an app icon</li>
-                <li>Open it like any app and enable notifications for alerts!</li>
-            </ol>
-        </div>
+
     </div>
 
     <script>
@@ -92,7 +82,7 @@
             statusMessage.classList.add('hidden');
             
             try {
-                const url = `https://huxley2.azurewebsites.net/departures/${FROM_STATION}/to/${TO_STATION}/10`;
+                const url = `https://huxley2.azurewebsites.net/departures/${FROM_STATION}/to/${TO_STATION}/20`;
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
@@ -100,7 +90,7 @@
                 const data = await response.json();
                 
                 if (data.trainServices && data.trainServices.length > 0) {
-                    displayTrains(data.trainServices.slice(0, 6));
+                    displayTrains(data.trainServices.slice(0, 12));
                     showStatus('success', 'Connected! Showing real-time trains from National Rail');
                     
                     // Check for delays
