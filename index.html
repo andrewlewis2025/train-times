@@ -114,72 +114,6 @@
         const FROM_STATION = 'PAL';
         const TO_STATION = 'MOG';
 
-        // Great Northern stations that go to Palmers Green (southbound)
-        const GREAT_NORTHERN_STATIONS = [
-            { name: 'Moorgate', lat: 51.5186, lon: -0.0886 },
-            { name: 'Old Street', lat: 51.5264, lon: -0.0871 },
-            { name: 'Essex Road', lat: 51.5393, lon: -0.1043 },
-            { name: 'Highbury & Islington', lat: 51.5462, lon: -0.1038 },
-            { name: 'Drayton Park', lat: 51.5535, lon: -0.1052 },
-            { name: 'Finsbury Park', lat: 51.5643, lon: -0.1065 },
-            { name: 'Harringay', lat: 51.5818, lon: -0.1049 },
-            { name: 'Hornsey', lat: 51.5873, lon: -0.1114 },
-            { name: 'Alexandra Palace', lat: 51.5978, lon: -0.1195 },
-            { name: 'Bowes Park', lat: 51.6028, lon: -0.1185 },
-            { name: 'Arnos Grove', lat: 51.6163, lon: -0.1332 },
-            { name: 'New Southgate', lat: 51.6133, lon: -0.1413 },
-            { name: 'Oakleigh Park', lat: 51.6373, lon: -0.1695 },
-            { name: 'New Barnet', lat: 51.6513, lon: -0.1738 },
-            { name: 'Hadley Wood', lat: 51.6623, lon: -0.1755 },
-            { name: 'Potters Bar', lat: 51.6974, lon: -0.1817 }
-        ];
-
-        function findNearestStation() {
-            if (!navigator.geolocation) {
-                alert('Geolocation is not supported by your browser');
-                return;
-            }
-
-            showStatus('info', 'Getting your location...');
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const userLat = position.coords.latitude;
-                    const userLon = position.coords.longitude;
-
-                    // Calculate distances to all stations
-                    const distances = GREAT_NORTHERN_STATIONS.map(station => ({
-                        ...station,
-                        distance: calculateDistance(userLat, userLon, station.lat, station.lon)
-                    }));
-
-                    // Find nearest station
-                    distances.sort((a, b) => a.distance - b.distance);
-                    const nearest = distances[0];
-
-                    // Open Google Maps with directions
-                    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nearest.name + ' Station London')}&travelmode=walking`;
-                    window.open(mapsUrl, '_blank');
-                },
-                (error) => {
-                    showStatus('error', 'Could not get your location. Please enable location services.');
-                    console.error('Geolocation error:', error);
-                }
-            );
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            // Haversine formula to calculate distance between two points
-            const R = 6371; // Earth's radius in km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
         async function fetchTrains() {
             const refreshIcon = document.getElementById('refreshIcon');
             const trainList = document.getElementById('trainList');
@@ -281,8 +215,7 @@
             const colors = {
                 success: 'bg-green-50 border-green-200 text-green-800',
                 error: 'bg-red-50 border-red-200 text-red-800',
-                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-                info: 'bg-blue-50 border-blue-200 text-blue-800'
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800'
             };
             
             statusMessage.className = `${colors[type]} border rounded-lg p-4 mb-4`;
