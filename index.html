@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Train Times">
-    <title>Train Times - Palmers Green</title>
+    <title>Palmers Green to Moorgate - Live Train Times</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media (display-mode: standalone) {
@@ -16,14 +16,35 @@
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
     <div class="max-w-2xl mx-auto p-4">
-        <!-- Header with Mode Toggle -->
+        <!-- Directions to Station -->
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
+            <a href="https://www.google.com/maps/dir/?api=1&destination=Palmers+Green+Station+London&travelmode=walking" 
+               target="_blank"
+               class="flex items-center justify-between text-indigo-600 hover:text-indigo-700 group">
+                <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <div>
+                        <div class="font-semibold text-gray-800">Walk to Palmers Green Station</div>
+                        <div class="text-sm text-gray-600">Get walking directions from your location</div>
+                    </div>
+                </div>
+                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Header -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                     <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
-                    <h1 class="text-2xl font-bold text-gray-800">Train Times</h1>
+                    <h1 class="text-2xl font-bold text-gray-800">Live Train Times</h1>
                 </div>
                 <button onclick="fetchTrains()" id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
                     <svg id="refreshIcon" class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,20 +52,19 @@
                     </svg>
                 </button>
             </div>
-
-            <!-- Mode Toggle Buttons -->
-            <div class="flex gap-2 mb-4">
-                <button onclick="setMode('out')" id="outBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md">
-                    🚀 OUT
-                </button>
-                <button onclick="setMode('home')" id="homeBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                    🏠 HOME
-                </button>
-            </div>
             
             <div class="text-sm text-gray-600 mb-3">
-                <div id="routeInfo" class="font-semibold">Palmers Green → Moorgate</div>
-                <div id="walkingTime" class="text-xs text-indigo-600 font-medium mt-1 hidden"></div>
+                <div class="font-semibold">
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=Palmers+Green+Station+London&travelmode=walking" 
+                       target="_blank"
+                       class="text-indigo-600 hover:text-indigo-700 hover:underline flex items-center gap-1 w-fit">
+                        📍 Palmers Green
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+                    → Moorgate
+                </div>
                 <div class="flex items-center gap-2 mt-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -57,11 +77,11 @@
             <div class="flex items-center gap-3 flex-wrap">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-indigo-600 rounded">
-                    <span class="text-sm text-gray-700">Auto-refresh</span>
+                    <span class="text-sm text-gray-700">Auto-refresh every minute</span>
                 </label>
                 
                 <button onclick="requestNotifications()" id="notifyBtn" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                    🔔 Enable alerts
+                    🔔 Enable delay alerts
                 </button>
             </div>
         </div>
@@ -75,54 +95,81 @@
                 Click refresh to load train times
             </div>
         </div>
+
+        <!-- Instructions -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mt-4">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">📱 Install as App</h2>
+            <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                <li>Open this page in <strong>Safari</strong> on your iPhone</li>
+                <li>Tap the <strong>Share button</strong> (square with arrow)</li>
+                <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Add"</strong> - it will appear as an app icon</li>
+                <li>Open it like any app and enable notifications for alerts!</li>
+            </ol>
+        </div>
     </div>
 
     <script>
         let autoRefreshInterval;
-        let currentMode = 'out';
-        let userLocation = null;
-        
-        // Great Northern stations on the line to Palmers Green (southbound stations)
+        const FROM_STATION = 'PAL';
+        const TO_STATION = 'MOG';
+
+        // Great Northern stations that go to Palmers Green (southbound)
         const GREAT_NORTHERN_STATIONS = [
-            { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
-            { code: 'OLD', name: 'Old Street', lat: 51.5263, lon: -0.0877 },
-            { code: 'EXR', name: 'Essex Road', lat: 51.5394, lon: -0.1042 },
-            { code: 'HBY', name: 'Highbury & Islington', lat: 51.5461, lon: -0.1038 },
-            { code: 'DRN', name: 'Drayton Park', lat: 51.5531, lon: -0.1117 },
-            { code: 'FPK', name: 'Finsbury Park', lat: 51.5642, lon: -0.1065 },
-            { code: 'HRY', name: 'Harringay', lat: 51.5818, lon: -0.1094 },
-            { code: 'HPY', name: 'Hornsey', lat: 51.5875, lon: -0.1169 },
-            { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
-            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
-            { code: 'ARN', name: 'Arnos Grove', lat: 51.6163, lon: -0.1334 },
-            { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
-            { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 },
-            { code: 'ENF', name: 'Enfield Chase', lat: 51.6527, lon: -0.1047 },
-            { code: 'GNT', name: 'Gordon Hill', lat: 51.6781, lon: -0.0852 },
-            { code: 'CWN', name: 'Crews Hill', lat: 51.6945, lon: -0.0797 },
-            { code: 'CHN', name: 'Cuffley', lat: 51.7086, lon: -0.1021 }
+            { name: 'Moorgate', lat: 51.5186, lon: -0.0886 },
+            { name: 'Old Street', lat: 51.5264, lon: -0.0871 },
+            { name: 'Essex Road', lat: 51.5393, lon: -0.1043 },
+            { name: 'Highbury & Islington', lat: 51.5462, lon: -0.1038 },
+            { name: 'Drayton Park', lat: 51.5535, lon: -0.1052 },
+            { name: 'Finsbury Park', lat: 51.5643, lon: -0.1065 },
+            { name: 'Harringay', lat: 51.5818, lon: -0.1049 },
+            { name: 'Hornsey', lat: 51.5873, lon: -0.1114 },
+            { name: 'Alexandra Palace', lat: 51.5978, lon: -0.1195 },
+            { name: 'Bowes Park', lat: 51.6028, lon: -0.1185 },
+            { name: 'Arnos Grove', lat: 51.6163, lon: -0.1332 },
+            { name: 'New Southgate', lat: 51.6133, lon: -0.1413 },
+            { name: 'Oakleigh Park', lat: 51.6373, lon: -0.1695 },
+            { name: 'New Barnet', lat: 51.6513, lon: -0.1738 },
+            { name: 'Hadley Wood', lat: 51.6623, lon: -0.1755 },
+            { name: 'Potters Bar', lat: 51.6974, lon: -0.1817 }
         ];
 
-        const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
-        const MOORGATE = { code: 'MOG', name: 'Moorgate' };
-
-        function setMode(mode) {
-            currentMode = mode;
-            const outBtn = document.getElementById('outBtn');
-            const homeBtn = document.getElementById('homeBtn');
-            
-            if (mode === 'out') {
-                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
-                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
-            } else {
-                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
-                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
+        function findNearestStation() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser');
+                return;
             }
-            
-            fetchTrains();
+
+            showStatus('info', 'Getting your location...');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+
+                    // Calculate distances to all stations
+                    const distances = GREAT_NORTHERN_STATIONS.map(station => ({
+                        ...station,
+                        distance: calculateDistance(userLat, userLon, station.lat, station.lon)
+                    }));
+
+                    // Find nearest station
+                    distances.sort((a, b) => a.distance - b.distance);
+                    const nearest = distances[0];
+
+                    // Open Google Maps with directions
+                    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nearest.name + ' Station London')}&travelmode=walking`;
+                    window.open(mapsUrl, '_blank');
+                },
+                (error) => {
+                    showStatus('error', 'Could not get your location. Please enable location services.');
+                    console.error('Geolocation error:', error);
+                }
+            );
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
+            // Haversine formula to calculate distance between two points
             const R = 6371; // Earth's radius in km
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -133,109 +180,16 @@
             return R * c;
         }
 
-        function findNearestStation(lat, lon) {
-            let nearest = null;
-            let minDistance = Infinity;
-            
-            for (const station of GREAT_NORTHERN_STATIONS) {
-                const distance = calculateDistance(lat, lon, station.lat, station.lon);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = station;
-                }
-            }
-            
-            return { station: nearest, distance: minDistance };
-        }
-
-        async function getWalkingTime(fromLat, fromLon, toLat, toLon) {
-            try {
-                // Using Google Maps Directions API would require an API key
-                // For now, estimate walking time: ~5km/h = ~80m/min
-                const distance = calculateDistance(fromLat, fromLon, toLat, toLon);
-                const walkingMinutes = Math.round((distance * 1000) / 80);
-                return walkingMinutes;
-            } catch (error) {
-                console.error('Error calculating walking time:', error);
-                return null;
-            }
-        }
-
-        async function getUserLocation() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error('Geolocation not supported'));
-                    return;
-                }
-                
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude
-                        });
-                    },
-                    (error) => {
-                        reject(error);
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-                );
-            });
-        }
-
         async function fetchTrains() {
             const refreshIcon = document.getElementById('refreshIcon');
             const trainList = document.getElementById('trainList');
             const statusMessage = document.getElementById('statusMessage');
-            const routeInfo = document.getElementById('routeInfo');
-            const walkingTimeEl = document.getElementById('walkingTime');
             
             refreshIcon.classList.add('animate-spin');
             statusMessage.classList.add('hidden');
-            walkingTimeEl.classList.add('hidden');
             
             try {
-                let fromStation, toStation;
-                
-                if (currentMode === 'out') {
-                    fromStation = PALMERS_GREEN.code;
-                    toStation = MOORGATE.code;
-                    routeInfo.textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
-                } else {
-                    // HOME mode - get user location
-                    showStatus('info', 'Getting your location...');
-                    
-                    try {
-                        userLocation = await getUserLocation();
-                        const { station, distance } = findNearestStation(userLocation.lat, userLocation.lon);
-                        
-                        if (distance > 5) {
-                            showStatus('warning', 'You seem far from the Great Northern line. Showing nearest station anyway.');
-                        }
-                        
-                        fromStation = station.code;
-                        toStation = PALMERS_GREEN.code;
-                        routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
-                        
-                        // Calculate walking time
-                        const walkingMins = await getWalkingTime(
-                            userLocation.lat, userLocation.lon,
-                            station.lat, station.lon
-                        );
-                        
-                        if (walkingMins !== null) {
-                            walkingTimeEl.textContent = `🚶 ${walkingMins} min walk to ${station.name}`;
-                            walkingTimeEl.classList.remove('hidden');
-                        }
-                        
-                    } catch (locError) {
-                        showStatus('error', 'Could not get your location. Please enable location services.');
-                        refreshIcon.classList.remove('animate-spin');
-                        return;
-                    }
-                }
-                
-                const url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
+                const url = `https://huxley2.azurewebsites.net/departures/${FROM_STATION}/to/${TO_STATION}/10`;
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
@@ -243,7 +197,7 @@
                 const data = await response.json();
                 
                 if (data.trainServices && data.trainServices.length > 0) {
-                    displayTrains(data.trainServices.slice(0, 12));
+                    displayTrains(data.trainServices.slice(0, 6));
                     showStatus('success', 'Connected! Showing real-time trains from National Rail');
                     
                     // Check for delays
@@ -253,7 +207,7 @@
                     
                     if (delayed.length > 0 && Notification.permission === 'granted') {
                         new Notification('Train Delay Alert', {
-                            body: `${delayed.length} train(s) affected on your route`,
+                            body: `${delayed.length} train(s) affected on Palmers Green to Moorgate route`,
                             icon: '🚂'
                         });
                     }
