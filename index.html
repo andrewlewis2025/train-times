@@ -214,7 +214,10 @@
                         }
                         
                         fromStation = station.code;
-                        toStation = PALMERS_GREEN.code;
+                        
+                        // Determine if user is north or south of Palmers Green
+                        const isNorthOfPalmersGreen = station.lat > PALMERS_GREEN.lat;
+                        
                         routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
                         
                         // Calculate walking time
@@ -235,11 +238,15 @@
                     }
                 }
                 
-                // For HOME mode, show all northbound trains (not filtered by destination)
-                // For OUT mode, filter to show only trains to Moorgate
-                const url = currentMode === 'home' 
-                    ? `https://huxley2.azurewebsites.net/departures/${fromStation}/20`
-                    : `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
+                // Build URL based on mode
+                let url;
+                if (currentMode === 'home') {
+                    // For HOME mode, get all departures and filter by calling point
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
+                } else {
+                    // For OUT mode, use destination filter
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
+                }
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
