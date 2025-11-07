@@ -213,18 +213,18 @@
         }
 
         function trainStopsAtPalmersGreen(train = {}) {
-            return (
-                structureContainsPalmersGreen(train.destination) ||
-                structureContainsPalmersGreen(train.subsequentCallingPoints) ||
-                structureContainsPalmersGreen(train.previousCallingPoints) ||
-                structureContainsPalmersGreen(train.callingPoints) ||
-                structureContainsPalmersGreen(train.stops) ||
-                structureContainsPalmersGreen(train.serviceDestinations) ||
-                structureContainsPalmersGreen(train.serviceDestinationText) ||
-                structureContainsPalmersGreen(train.origin) ||
-                structureContainsPalmersGreen(train.origins) ||
-                structureContainsPalmersGreen(train.serviceOrigins)
-            );
+            const FUTURE_SEARCH_FIELDS = [
+                'destination',
+                'subsequentCallingPoints',
+                'callingPoints',
+                'stops',
+                'serviceDestinations',
+                'serviceDestinationText'
+            ];
+
+            return FUTURE_SEARCH_FIELDS.some(function(field) {
+                return structureContainsPalmersGreen(train && train[field]);
+            });
         }
 
         function setMode(mode) {
