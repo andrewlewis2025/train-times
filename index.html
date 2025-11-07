@@ -1,644 +1,380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nearest Great Northern Station → Palmers Green</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Palmers Green Train Companion</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f3f4ff;
-      color: #111827;
-    }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(180deg, #eef2ff 0%, #dbeafe 100%);
-      display: flex;
-      justify-content: center;
-      padding: 20px 16px 32px;
-    }
-    #root {
-      width: 100%;
-      max-width: 520px;
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 24px;
-      box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25);
-      padding: 24px;
-      backdrop-filter: blur(12px);
-    }
-    .tab-bar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .tab-button {
-      flex: 1;
-      border: none;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-weight: 600;
-      font-size: 16px;
-      background: rgba(99, 102, 241, 0.12);
-      color: #312e81;
-    }
-    .tab-button.active {
-      background: linear-gradient(90deg, #6366f1, #4f46e5);
-      color: white;
-      box-shadow: 0 12px 20px -8px rgba(99, 102, 241, 0.6);
-    }
-    .page-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin: 0 0 4px 0;
-    }
-    .page-subtitle {
-      margin: 0 0 16px 0;
-      color: #4b5563;
-      font-size: 0.95rem;
-    }
-    .list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .list-item {
-      border-radius: 18px;
-      border: 1px solid rgba(99, 102, 241, 0.12);
-      background: white;
-      padding: 16px;
-      display: grid;
-      gap: 6px;
-    }
-    .list-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-      font-size: 1.05rem;
-      color: #1f2937;
-    }
-    .meta {
-      font-size: 0.9rem;
-      color: #4b5563;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .status {
-      font-weight: 600;
-    }
-    .status.on-time { color: #059669; }
-    .status.delayed { color: #b91c1c; }
-    .status.cancelled { color: #fb7185; }
-    .notify-btn {
-      margin-top: 8px;
-      border: none;
-      border-radius: 999px;
-      padding: 10px 16px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      background: rgba(59, 130, 246, 0.12);
-      color: #1d4ed8;
-    }
-    .notify-btn.active {
-      background: rgba(16, 185, 129, 0.16);
-      color: #047857;
-    }
-    .error {
-      padding: 16px;
-      border-radius: 12px;
-      background: rgba(239, 68, 68, 0.12);
-      color: #b91c1c;
-      margin-top: 12px;
-    }
-    .skeleton {
-      height: 64px;
-      border-radius: 18px;
-      background: linear-gradient(90deg, rgba(59,130,246,0.08) 25%, rgba(99,102,241,0.16) 50%, rgba(59,130,246,0.08) 75%);
-      background-size: 400% 100%;
-      animation: shimmer 2s infinite;
-    }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    a {
-      color: #4338ca;
-    }
-  </style>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Train Times">
+    <title>Train Times - Palmers Green</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media (display-mode: standalone) {
+            body { padding-top: env(safe-area-inset-top); }
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6">
-  <h1 class="text-2xl font-bold mb-4 text-center">Nearest Great Northern → Palmers Green</h1>
-  <div id="status" class="text-center text-gray-700 mb-4">Finding your location...</div>
-  <div id="results" class="max-w-2xl mx-auto bg-white shadow-md rounded-xl p-4"></div>
-<body>
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useEffect, useCallback, useMemo, useRef } = React;
-
-  <script>
-    const APP_ID = "e93db4ec";
-    const APP_KEY = "b85454249e10c63caf55d55de9bd7d73";
-
-    async function getNearestStation(lat, lon) {
-      const url = `https://transportapi.com/v3/uk/places.json?lat=${lat}&lon=${lon}&type=train_station&app_id=${APP_ID}&app_key=${APP_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const stations = data.member.filter(s => s.name.includes("Great Northern") || s.network === "Great Northern");
-      return stations.length ? stations[0] : data.member[0];
-    }
-
-    async function getTrainTimes(stationCode) {
-      const url = `https://transportapi.com/v3/uk/train/station/${stationCode}/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&darwin=true&train_status=passenger`;
-      const res = await fetch(url);
-      return res.json();
-    }
-
-    function getGoogleMapsLink(from, to) {
-      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=walking`;
-    }
-
-    function displayTrains(data, station, lat, lon) {
-      const container = document.getElementById("results");
-      const departures = data.departures.all.filter(t => t.destination_name.includes("Palmers Green"));
-      const mapsLink = getGoogleMapsLink(`${lat},${lon}`, station.name);
-      let html = `
-        <h2 class="text-xl font-semibold mb-2">${station.name}</h2>
-        <p class="text-sm mb-3">(${station.station_code}) - <a class="text-blue-600 underline" href="${mapsLink}" target="_blank">Walking directions</a></p>
-      `;
-      if (departures.length === 0) {
-        html += `<p>No upcoming trains towards Palmers Green found.</p>`;
-      } else {
-        html += `<ul class="divide-y divide-gray-200">`;
-        departures.slice(0, 5).forEach(train => {
-          html += `
-            <li class="py-2">
-              <div><strong>${train.destination_name}</strong></div>
-              <div>Departs: ${train.aimed_departure_time} → Expected: ${train.expected_departure_time}</div>
-              <div>Platform: ${train.platform || "—"}</div>
-            </li>
-          `;
-        });
-        html += `</ul>`;
-    const PALMERS_GREEN = {
-      code: "PMG",
-      name: "Palmers Green",
-      lat: 51.6188,
-      lon: -0.1090,
-    };
-
-    const GREAT_NORTHERN_STATIONS = [
-      { code: "MOG", name: "Moorgate", lat: 51.518871, lon: -0.088415 },
-      { code: "OLD", name: "Old Street", lat: 51.525583, lon: -0.088711 },
-      { code: "ESR", name: "Essex Road", lat: 51.540653, lon: -0.098901 },
-      { code: "HHY", name: "Highbury & Islington", lat: 51.546965, lon: -0.103118 },
-      { code: "DYP", name: "Drayton Park", lat: 51.552069, lon: -0.104468 },
-      { code: "FPK", name: "Finsbury Park", lat: 51.564599, lon: -0.105396 },
-      { code: "HRY", name: "Harringay", lat: 51.577382, lon: -0.106993 },
-      { code: "HGY", name: "Hornsey", lat: 51.586626, lon: -0.104932 },
-      { code: "AAP", name: "Alexandra Palace", lat: 51.597147, lon: -0.120741 },
-      { code: "BOP", name: "Bowes Park", lat: 51.607959, lon: -0.111879 },
-      { code: "PMG", name: "Palmers Green", lat: 51.6188, lon: -0.1090 },
-      { code: "WIH", name: "Winchmore Hill", lat: 51.633104, lon: -0.098205 },
-      { code: "GPK", name: "Grange Park", lat: 51.644798, lon: -0.098089 },
-      { code: "ENC", name: "Enfield Chase", lat: 51.653539, lon: -0.090342 },
-      { code: "CFO", name: "Crews Hill", lat: 51.684363, lon: -0.101158 },
-      { code: "BAY", name: "Bayford", lat: 51.721866, lon: -0.110869 },
-      { code: "CWH", name: "Cuffley", lat: 51.708971, lon: -0.110369 },
-      { code: "GNH", name: "Gordon Hill", lat: 51.662883, lon: -0.089677 },
-      { code: "SVB", name: "Stevenage", lat: 51.901677, lon: -0.204723 },
-      { code: "HBN", name: "Hertford North", lat: 51.798951, lon: -0.091982 },
-      { code: "WGC", name: "Welwyn Garden City", lat: 51.801278, lon: -0.204533 }
-    ];
-
-    const WATCH_POLL_INTERVAL = 30000;
-    const BOARD_REFRESH_INTERVAL = 60000;
-
-    const formatTime = (time) => time ? time : "—";
-
-    const statusClass = (train) => {
-      const status = (train?.status || "").toLowerCase();
-      if (status.includes("cancel")) return "cancelled";
-      if (status.includes("late") || (train.expected_departure_time && train.aimed_departure_time && train.expected_departure_time !== train.aimed_departure_time)) {
-        return "delayed";
-      }
-      container.innerHTML = html;
-    }
-      return "on-time";
-    };
-
-    function showError(message) {
-      document.getElementById("status").textContent = message;
-    }
-    const haversineKm = (lat1, lon1, lat2, lon2) => {
-      const toRad = (d) => (d * Math.PI) / 180;
-      const R = 6371;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    };
-
-    const distanceLabel = (km) => {
-      if (!Number.isFinite(km)) return null;
-      const meters = km * 1000;
-      if (meters < 200) return "about 2 min walk";
-      if (meters < 400) return "about 4 min walk";
-      if (meters < 800) return "about 8 min walk";
-      return `${meters < 1000 ? meters.toFixed(0) + ' m' : (km).toFixed(2) + ' km'} walk`;
-    };
-
-    const ensureNotificationPermission = async () => {
-      if (!("Notification" in window)) {
-        alert("Notifications are not supported on this device.");
-        return false;
-      }
-      if (Notification.permission === "granted") {
-        return true;
-      }
-      if (Notification.permission === "denied") {
-        alert("Notifications have been denied. Enable them in settings to receive alerts.");
-        return false;
-      }
-      const permission = await Notification.requestPermission();
-      return permission === "granted";
-    };
-
-    const OutboundPage = ({ departuresState, onToggleWatch, watchList, lastUpdated }) => {
-      const { loading, error, departures } = departuresState;
-      return (
-        <div className="card">
-          <h1 className="page-title">Palmers Green → Moorgate</h1>
-          <p className="page-subtitle">Next 10 live departures heading into the city.</p>
-          {lastUpdated && (
-            <p className="page-subtitle" style={{ fontSize: "0.8rem", marginTop: "-6px" }}>
-              Updated {new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          )}
-          {loading && (
-            <div className="list">
-              {Array.from({ length: 4 }).map((_, idx) => <div className="skeleton" key={idx} />)}
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="max-w-2xl mx-auto p-4">
+        <!-- Header with Mode Toggle -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-800">Train Times</h1>
+                </div>
+                <button onclick="fetchTrains()" id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <svg id="refreshIcon" class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
             </div>
-          )}
-          {error && <div className="error">{error}</div>}
-          {!loading && !error && departures?.length === 0 && (
-            <p>No departures to Moorgate were found at this time.</p>
-          )}
-          {!loading && !error && departures?.length > 0 && (
-            <ul className="list">
-              {departures.map((train) => {
-                const watched = watchList.some((w) => w.service === train.service);
-                const status = statusClass(train);
-                const notifyLabel = watched ? (train.expected_departure_time !== train.aimed_departure_time ? "Delay alert sent" : "Watching for delays") : "Notify if this train is delayed";
-                return (
-                  <li className="list-item" key={`${train.service}-${train.aimed_departure_time}`}>
-                    <div className="list-item-header">
-                      <span>{train.destination_name}</span>
-                      <span>{formatTime(train.aimed_departure_time)}</span>
-                    </div>
-                    <div className="meta">
-                      <span><strong>Expected:</strong> {formatTime(train.expected_departure_time)}</span>
-                      <span><strong>Platform:</strong> {train.platform || "TBC"}</span>
-                      <span className={`status ${status}`}>{train.status || "On time"}</span>
-                    </div>
-                    <button
-                      className={`notify-btn ${watched ? 'active' : ''}`}
-                      onClick={() => onToggleWatch(train)}
-                    >
-                      {notifyLabel}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+
+            <!-- Mode Toggle Buttons -->
+            <div class="flex gap-2 mb-4">
+                <button onclick="setMode('out')" id="outBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md">
+                    🚀 OUT
+                </button>
+                <button onclick="setMode('home')" id="homeBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+                    🏠 HOME
+                </button>
+            </div>
+            
+            <div class="text-sm text-gray-600 mb-3">
+                <div id="routeInfo" class="font-semibold">Palmers Green → Moorgate</div>
+                <div id="walkingTime" class="text-xs text-indigo-600 font-medium mt-1 hidden"></div>
+                <div class="flex items-center gap-2 mt-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span id="lastUpdate">Loading...</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-indigo-600 rounded">
+                    <span class="text-sm text-gray-700">Auto-refresh</span>
+                </label>
+                
+                <button onclick="requestNotifications()" id="notifyBtn" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                    🔔 Enable alerts
+                </button>
+            </div>
         </div>
-      );
-    };
 
-    const HomewardPage = ({ state }) => {
-      const { loading, error, station, departures, distanceKm, coords, lastUpdated } = state;
-      return (
-        <div className="card">
-          <h1 className="page-title">Head back towards Palmers Green</h1>
-          <p className="page-subtitle">We\'ll guide you from the nearest Great Northern station.</p>
-          {loading && (
-            <div className="list">
-              {Array.from({ length: 4 }).map((_, idx) => <div className="skeleton" key={idx} />)}
+        <!-- Status Message -->
+        <div id="statusMessage" class="mb-4 hidden"></div>
+
+        <!-- Train List -->
+        <div id="trainList" class="space-y-3">
+            <div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
+                Click refresh to load train times
             </div>
-          )}
-          {error && <div className="error">{error}</div>}
-          {!loading && !error && station && (
-            <div style={{ marginBottom: "16px" }}>
-              <h2 style={{ margin: "0 0 4px", fontSize: "1.2rem" }}>{station.name}</h2>
-              <p style={{ margin: 0, color: "#4b5563", fontSize: "0.9rem" }}>
-                CRS: {station.station_code} · {station.directionNote}
-              </p>
-              {Number.isFinite(distanceKm) && (
-                <p style={{ margin: "8px 0 0", fontSize: "0.9rem" }}>
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(station.name + ' station')}&destination_place_id=&travelmode=walking&origin=${coords ? `${coords.latitude},${coords.longitude}` : ''}`}
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    {distanceLabel(distanceKm)}
-                  </a>
-                </p>
-              )}
-              {lastUpdated && (
-                <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "#6b7280" }}>
-                  Updated {new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              )}
-            </div>
-          )}
-          {!loading && !error && departures?.length === 0 && station && (
-            <p>No suitable departures were found just now. We\'ll keep checking every minute.</p>
-          )}
-          {!loading && !error && departures?.length > 0 && (
-            <ul className="list">
-              {departures.map((train) => {
-                const status = statusClass(train);
-                return (
-                  <li className="list-item" key={`${train.service}-${train.aimed_departure_time}`}>
-                    <div className="list-item-header">
-                      <span>{train.destination_name}</span>
-                      <span>{formatTime(train.aimed_departure_time)}</span>
-                    </div>
-                    <div className="meta">
-                      <span><strong>Expected:</strong> {formatTime(train.expected_departure_time)}</span>
-                      <span><strong>Platform:</strong> {train.platform || "TBC"}</span>
-                      <span className={`status ${status}`}>{train.status || "On time"}</span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
         </div>
-      );
-    };
+    </div>
 
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        document.getElementById("status").textContent = "Finding nearest station...";
-        const station = await getNearestStation(latitude, longitude);
-        document.getElementById("status").textContent = `Fetching trains from ${station.name}...`;
-        const data = await getTrainTimes(station.station_code);
-        document.getElementById("status").textContent = "";
-        displayTrains(data, station, latitude, longitude);
-      }, () => showError("Could not access location."));
-    } else {
-      showError("Geolocation not supported by your browser.");
-    function App() {
-      const [activeTab, setActiveTab] = useState("out");
-      const [outDeparturesState, setOutDeparturesState] = useState({ loading: true, error: null, departures: [] });
-      const [homeState, setHomeState] = useState({ loading: false, error: null, station: null, departures: [], distanceKm: null, coords: null });
-      const [watchList, setWatchList] = useState([]);
-      const [outLastUpdated, setOutLastUpdated] = useState(null);
-      const [homeLastUpdated, setHomeLastUpdated] = useState(null);
-      const latestCoordsRef = useRef(null);
+    <script>
+        let autoRefreshInterval;
+        let currentMode = 'out';
+        let userLocation = null;
+        
+        // Great Northern stations on the line to Palmers Green (southbound stations)
+        const GREAT_NORTHERN_STATIONS = [
+            { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
+            { code: 'OLD', name: 'Old Street', lat: 51.5263, lon: -0.0877 },
+            { code: 'EXR', name: 'Essex Road', lat: 51.5394, lon: -0.1042 },
+            { code: 'HBY', name: 'Highbury & Islington', lat: 51.5461, lon: -0.1038 },
+            { code: 'DRN', name: 'Drayton Park', lat: 51.5531, lon: -0.1117 },
+            { code: 'FPK', name: 'Finsbury Park', lat: 51.5642, lon: -0.1065 },
+            { code: 'HRY', name: 'Harringay', lat: 51.5818, lon: -0.1094 },
+            { code: 'HPY', name: 'Hornsey', lat: 51.5875, lon: -0.1169 },
+            { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
+            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
+            { code: 'ARN', name: 'Arnos Grove', lat: 51.6163, lon: -0.1334 },
+            { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
+            { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 },
+            { code: 'ENF', name: 'Enfield Chase', lat: 51.6527, lon: -0.1047 },
+            { code: 'GNT', name: 'Gordon Hill', lat: 51.6781, lon: -0.0852 },
+            { code: 'CWN', name: 'Crews Hill', lat: 51.6945, lon: -0.0797 },
+            { code: 'CHN', name: 'Cuffley', lat: 51.7086, lon: -0.1021 }
+        ];
 
-      const loadOutDepartures = useCallback(async (silent = false) => {
-        const url = `https://transportapi.com/v3/uk/train/station/${PALMERS_GREEN.code}/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&darwin=true&train_status=passenger`;
-        if (!silent) {
-          setOutDeparturesState((prev) => ({ ...prev, loading: true, error: null }));
-        }
-        try {
-          const response = await fetch(url);
-          if (!response.ok) {
-            throw new Error(`Unable to load departures (${response.status})`);
-          }
-          const data = await response.json();
-          const departures = (data?.departures?.all || [])
-            .filter((train) => (train.destination_name || "").toLowerCase().includes("moorgate"))
-            .slice(0, 10);
-          if (!silent) {
-            setOutDeparturesState({ loading: false, error: null, departures });
-            setOutLastUpdated(Date.now());
-          } else {
-            setOutDeparturesState({ loading: false, error: null, departures });
-            setOutLastUpdated(Date.now());
-          }
-          return { departures, data };
-        } catch (error) {
-          if (!silent) {
-            setOutDeparturesState({ loading: false, error: error.message, departures: [] });
-          }
-          throw error;
-        }
-      }, []);
+        const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
+        const MOORGATE = { code: 'MOG', name: 'Moorgate' };
 
-      useEffect(() => {
-        loadOutDepartures();
-        const interval = setInterval(() => {
-          loadOutDepartures(true).catch(() => {});
-        }, BOARD_REFRESH_INTERVAL);
-        return () => clearInterval(interval);
-      }, [loadOutDepartures]);
-
-      useEffect(() => {
-        if (watchList.length === 0) {
-          return undefined;
-        }
-        let cancelled = false;
-        const poll = async () => {
-          try {
-            const { data } = await loadOutDepartures(true);
-            if (cancelled) return;
-            const trains = data?.departures?.all || [];
-            setWatchList((current) => current.map((watch) => {
-              const match = trains.find((train) => train.service === watch.service);
-              if (!match) {
-                return watch;
-              }
-              const isDelayed = match.expected_departure_time && match.aimed_departure_time && match.expected_departure_time !== match.aimed_departure_time;
-              if (isDelayed && !watch.notified) {
-                if (("Notification" in window) && Notification.permission === "granted") {
-                  new Notification(`Delay: ${PALMERS_GREEN.name} → ${match.destination_name}`, {
-                    body: `Now expected ${match.expected_departure_time} (was ${match.aimed_departure_time}).`,
-                  });
-                }
-                return { ...watch, notified: true, lastExpected: match.expected_departure_time };
-              }
-              if (!isDelayed && watch.notified && match.expected_departure_time === match.aimed_departure_time) {
-                return { ...watch, notified: false };
-              }
-              return watch;
-            }));
-          } catch (e) {
-            console.error("Watcher refresh failed", e);
-          }
-        };
-        poll();
-        const interval = setInterval(poll, WATCH_POLL_INTERVAL);
-        return () => {
-          cancelled = true;
-          clearInterval(interval);
-        };
-      }, [watchList.length, loadOutDepartures]);
-
-      const toggleWatch = async (train) => {
-        const exists = watchList.some((watch) => watch.service === train.service);
-        if (exists) {
-          setWatchList((current) => current.filter((watch) => watch.service !== train.service));
-          return;
-        }
-        const granted = await ensureNotificationPermission();
-        if (!granted) {
-          return;
-        }
-        setWatchList((current) => [
-          ...current,
-          {
-            service: train.service,
-            aimed_departure_time: train.aimed_departure_time,
-            destination_name: train.destination_name,
-            notified: false,
-          },
-        ]);
-      };
-
-      const loadNearestStation = useCallback(async (coords) => {
-        latestCoordsRef.current = coords;
-        setHomeState({ loading: true, error: null, station: null, departures: [], distanceKm: null, coords });
-        try {
-          const url = `https://transportapi.com/v3/uk/places.json?lat=${coords.latitude}&lon=${coords.longitude}&type=train_station&app_id=${APP_ID}&app_key=${APP_KEY}`;
-          const response = await fetch(url);
-          if (!response.ok) {
-            throw new Error(`Unable to search nearby stations (${response.status})`);
-          }
-          const data = await response.json();
-          const candidates = (data.member || []).filter((item) => GREAT_NORTHERN_STATIONS.some((station) => station.code === item.station_code));
-          const station = candidates[0] || data.member?.find((item) => item.station_code) || null;
-          if (!station) {
-            throw new Error("Could not find a nearby Great Northern station.");
-          }
-          const originIsNorth = coords.latitude > PALMERS_GREEN.lat;
-          const stationMeta = GREAT_NORTHERN_STATIONS.find((item) => item.code === station.station_code);
-          const distanceKm = stationMeta ? haversineKm(coords.latitude, coords.longitude, stationMeta.lat, stationMeta.lon) : null;
-
-          const params = new URLSearchParams({
-            app_id: APP_ID,
-            app_key: APP_KEY,
-            darwin: "true",
-            train_status: "passenger",
-          });
-          if (!originIsNorth) {
-            params.append("calling_at", PALMERS_GREEN.code);
-            params.append("direction", "Northbound");
-          } else {
-            params.append("direction", "Southbound");
-          }
-          const departuresUrl = `https://transportapi.com/v3/uk/train/station/${station.station_code}/live.json?${params.toString()}`;
-          const departuresResponse = await fetch(departuresUrl);
-          if (!departuresResponse.ok) {
-            throw new Error(`Unable to load departures for ${station.name}`);
-          }
-          const departuresData = await departuresResponse.json();
-          const trains = (departuresData?.departures?.all || []).filter((train) => {
-            if (!originIsNorth) {
-              return true;
+        function setMode(mode) {
+            currentMode = mode;
+            const outBtn = document.getElementById('outBtn');
+            const homeBtn = document.getElementById('homeBtn');
+            
+            if (mode === 'out') {
+                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
+                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
+            } else {
+                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
+                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
             }
-            return (train.destination_name || "").toLowerCase().includes("moorgate") || (train.direction || "").toLowerCase() === "southbound";
-          }).slice(0, 10);
-
-          setHomeState({
-            loading: false,
-            error: null,
-            station: {
-              ...station,
-              directionNote: originIsNorth ? "Showing southbound trains towards London" : "Showing northbound trains that call at Palmers Green",
-            },
-            departures: trains,
-            distanceKm,
-            coords,
-          });
-          latestCoordsRef.current = coords;
-          setHomeLastUpdated(Date.now());
-        } catch (error) {
-          setHomeState({ loading: false, error: error.message, station: null, departures: [], distanceKm: null, coords });
+            
+            fetchTrains();
         }
-      }, []);
 
-      useEffect(() => {
-        if (activeTab !== "home") {
-          return undefined;
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
-        if (!navigator.geolocation) {
-          setHomeState({ loading: false, error: "Geolocation is not supported on this device.", station: null, departures: [], distanceKm: null, coords: null });
-          return undefined;
+
+        function findNearestStation(lat, lon) {
+            let nearest = null;
+            let minDistance = Infinity;
+            
+            for (const station of GREAT_NORTHERN_STATIONS) {
+                const distance = calculateDistance(lat, lon, station.lat, station.lon);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = station;
+                }
+            }
+            
+            return { station: nearest, distance: minDistance };
         }
-        setHomeState((prev) => ({ ...prev, loading: true, error: null }));
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            loadNearestStation(position.coords);
-          },
-          (err) => {
-            setHomeState({ loading: false, error: "We couldn't access your location.", station: null, departures: [], distanceKm: null, coords: null });
-          },
-          { enableHighAccuracy: true, timeout: 15000 }
-        );
-        const interval = setInterval(() => {
-          if (latestCoordsRef.current) {
-            loadNearestStation(latestCoordsRef.current).catch(() => {});
-          }
-        }, BOARD_REFRESH_INTERVAL);
-        return () => clearInterval(interval);
-      }, [activeTab, loadNearestStation]);
 
-      const homePageState = useMemo(() => ({ ...homeState, lastUpdated: homeLastUpdated }), [homeState, homeLastUpdated]);
+        async function getWalkingTime(fromLat, fromLon, toLat, toLon) {
+            try {
+                // Using Google Maps Directions API would require an API key
+                // For now, estimate walking time: ~5km/h = ~80m/min
+                const distance = calculateDistance(fromLat, fromLon, toLat, toLon);
+                const walkingMinutes = Math.round((distance * 1000) / 80);
+                return walkingMinutes;
+            } catch (error) {
+                console.error('Error calculating walking time:', error);
+                return null;
+            }
+        }
 
-      return (
-        <div>
-          <div className="tab-bar">
-            <button
-              className={`tab-button ${activeTab === "out" ? "active" : ""}`}
-              onClick={() => setActiveTab("out")}
-            >
-              OUT
-            </button>
-            <button
-              className={`tab-button ${activeTab === "home" ? "active" : ""}`}
-              onClick={() => setActiveTab("home")}
-            >
-              HOME
-            </button>
-          </div>
-          {activeTab === "out" ? (
-            <OutboundPage
-              departuresState={outDeparturesState}
-              onToggleWatch={toggleWatch}
-              watchList={watchList}
-              lastUpdated={outLastUpdated}
-            />
-          ) : (
-            <HomewardPage state={homePageState} />
-          )}
-        </div>
-      );
-    }
+        async function getUserLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation not supported'));
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        reject(error);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+                );
+            });
+        }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+        async function fetchTrains() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            const trainList = document.getElementById('trainList');
+            const statusMessage = document.getElementById('statusMessage');
+            const routeInfo = document.getElementById('routeInfo');
+            const walkingTimeEl = document.getElementById('walkingTime');
+            
+            refreshIcon.classList.add('animate-spin');
+            statusMessage.classList.add('hidden');
+            walkingTimeEl.classList.add('hidden');
+            
+            try {
+                let fromStation, toStation;
+                
+                if (currentMode === 'out') {
+                    fromStation = PALMERS_GREEN.code;
+                    toStation = MOORGATE.code;
+                    routeInfo.textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
+                } else {
+                    // HOME mode - get user location
+                    showStatus('info', 'Getting your location...');
+                    
+                    try {
+                        userLocation = await getUserLocation();
+                        const { station, distance } = findNearestStation(userLocation.lat, userLocation.lon);
+                        
+                        if (distance > 5) {
+                            showStatus('warning', 'You seem far from the Great Northern line. Showing nearest station anyway.');
+                        }
+                        
+                        fromStation = station.code;
+                        
+                        // Determine if user is north or south of Palmers Green
+                        const isNorthOfPalmersGreen = station.lat > PALMERS_GREEN.lat;
+                        
+                        routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
+                        
+                        // Calculate walking time
+                        const walkingMins = await getWalkingTime(
+                            userLocation.lat, userLocation.lon,
+                            station.lat, station.lon
+                        );
+                        
+                        if (walkingMins !== null) {
+                            walkingTimeEl.textContent = `🚶 ${walkingMins} min walk to ${station.name}`;
+                            walkingTimeEl.classList.remove('hidden');
+                        }
+                        
+                    } catch (locError) {
+                        showStatus('error', 'Could not get your location. Please enable location services.');
+                        refreshIcon.classList.remove('animate-spin');
+                        return;
+                    }
+                }
+                
+                // Build URL based on mode
+                let url;
+                if (currentMode === 'home') {
+                    // For HOME mode, get all departures and filter by calling point
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
+                } else {
+                    // For OUT mode, use destination filter
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
+                }
+                const response = await fetch(url);
+                
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.trainServices && data.trainServices.length > 0) {
+                    displayTrains(data.trainServices.slice(0, 12));
+                    showStatus('success', 'Connected! Showing real-time trains from National Rail');
+                    
+                    // Check for delays
+                    const delayed = data.trainServices.filter(t => 
+                        t.isCancelled || (t.etd && t.etd !== t.std && t.etd !== 'On time')
+                    );
+                    
+                    if (delayed.length > 0 && Notification.permission === 'granted') {
+                        new Notification('Train Delay Alert', {
+                            body: `${delayed.length} train(s) affected on your route`,
+                            icon: '🚂'
+                        });
+                    }
+                } else {
+                    trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">No trains currently scheduled</div>';
+                    showStatus('warning', 'No trains found for this route');
+                }
+                
+                document.getElementById('lastUpdate').textContent = 
+                    'Last updated: ' + new Date().toLocaleTimeString('en-GB');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('error', `Failed to fetch train times: ${error.message}`);
+                trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-red-500">Failed to load trains. Please try again.</div>';
+            } finally {
+                refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function displayTrains(trains) {
+            const trainList = document.getElementById('trainList');
+            trainList.innerHTML = trains.map(train => {
+                const scheduled = train.std || train.sta;
+                const expected = train.etd || train.eta;
+                const isCancelled = train.isCancelled;
+                const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
+                
+                let status = 'On time';
+                let statusColor = 'text-green-600';
+                let statusBg = 'bg-green-50';
+                let borderColor = 'border-green-500';
+                
+                if (isCancelled) {
+                    status = 'Cancelled';
+                    statusColor = 'text-red-800';
+                    statusBg = 'bg-red-100';
+                    borderColor = 'border-red-800';
+                } else if (isDelayed) {
+                    status = 'Delayed';
+                    statusColor = 'text-red-600';
+                    statusBg = 'bg-red-50';
+                    borderColor = 'border-red-500';
+                }
+                
+                return `
+                    <div class="bg-white rounded-lg shadow-md p-4 ${statusBg} border-l-4 ${borderColor}">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <div>
+                                    <div class="text-2xl font-bold text-gray-800">${scheduled}</div>
+                                    ${expected !== scheduled && !isCancelled ? 
+                                        `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="font-semibold text-right ${statusColor}">
+                                ${status}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                            <div><span class="font-medium">Platform:</span> ${train.platform || 'TBC'}</div>
+                            <div><span class="font-medium">Operator:</span> ${train.operator || 'Unknown'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showStatus(type, message) {
+            const statusMessage = document.getElementById('statusMessage');
+            const colors = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+            
+            statusMessage.className = `${colors[type]} border rounded-lg p-4 mb-4`;
+            statusMessage.innerHTML = `<div class="text-sm">${message}</div>`;
+            statusMessage.classList.remove('hidden');
+        }
+
+        function requestNotifications() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        document.getElementById('notifyBtn').style.display = 'none';
+                        showStatus('success', 'Notifications enabled! You\'ll be alerted of delays.');
+                    }
+                });
+            }
+        }
+
+        // Auto-refresh setup
+        document.getElementById('autoRefresh').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                autoRefreshInterval = setInterval(fetchTrains, 60000);
+            } else {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+
+        // Hide notification button if already granted
+        if ('Notification' in window && Notification.permission === 'granted') {
+            document.getElementById('notifyBtn').style.display = 'none';
+        }
+
+        // Initial load
+        fetchTrains();
+        autoRefreshInterval = setInterval(fetchTrains, 60000);
+    </script>
 </body>
 </html>
