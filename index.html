@@ -143,10 +143,8 @@
       const trainList = document.getElementById('trainList');
       const statusMessage = document.getElementById('statusMessage');
       const routeInfo = document.getElementById('routeInfo');
-      const walkingTimeEl = document.getElementById('walkingTime');
       refreshIcon.classList.add('animate-spin');
       statusMessage.classList.add('hidden');
-      walkingTimeEl.classList.add('hidden');
 
       try {
         let fromStation, toStation;
@@ -176,4 +174,92 @@
 
         if (data.trainServices && data.trainServices.length > 0) {
           displayTrains(data.trainServices.slice(0, 12));
-          showStatus('succes
+          showStatus('success', 'Connected! Showing real-time trains');
+        } else {
+          trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">No trains currently scheduled</div>';
+          showStatus('warning', 'No trains found for this route');
+        }
+        document.getElementById('lastUpdate').textContent =
+          'Last updated: ' + new Date().toLocaleTimeString('en-GB');
+      } catch (err) {
+        showStatus('error', 'Failed to fetch: ' + err.message);
+      } finally {
+        refreshIcon.classList.remove('animate-spin');
+      }
+    }
+
+    function displayTrains(trains) {
+      const trainList = document.getElementById('trainList');
+      trainList.innerHTML = trains.map(train => {
+        const scheduled = train.std || train.sta;
+        const expected = train.etd || train.eta;
+        const destination = train.destination?.[0]?.locationName || 'Unknown';
+        const origin = train.origin?.[0]?.locationName || 'Unknown';
+        const isCancelled = train.isCancelled;
+        const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
+
+        let status = 'On time', color = 'text-green-600', bg = 'bg-green-50', border = 'border-green-500';
+        if (isCancelled) { status = 'Cancelled'; color = 'text-red-800'; bg = 'bg-red-100'; border = 'border-red-800'; }
+        else if (isDelayed) { status = 'Delayed'; color = 'text-yellow-600'; bg = 'bg-yellow-50'; border = 'border-yellow-500'; }
+
+        const journeyInfo =
+          currentMode === 'home'
+            ? `<div class="text-sm text-gray-700 mb-1"><span class="font-medium">Origin:</span> ${origin} → <span class="font-medium">Destination:</span> ${destination}</div>`
+            : `<div class="text-sm text-gray-700 mb-1"><span class="font-medium">Destination:</span> ${destination}</div>`;
+
+        return `
+          <div class="bg-white rounded-lg shadow-md p-4 ${bg} border-l-4 ${border}">
+            <div class="flex justify-between mb-2">
+              <div>
+                <div class="text-2xl font-bold text-gray-800">${scheduled}</div>
+                ${expected !== scheduled && !isCancelled ? `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
+              </div>
+              <div class="font-semibold ${color}">${status}</div>
+            </div>
+            ${journeyInfo}
+            <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+              <div><span class="font-medium">Platform:</span> ${train.platform || 'TBC'}</div>
+              <div><span class="font-medium">Operator:</span> ${train.operator || 'Unknown'}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function showStatus(type, message) {
+      const el = document.getElementById('statusMessage');
+      const color = {
+        success: 'bg-green-50 border-green-300 text-green-800',
+        error: 'bg-red-50 border-red-300 text-red-800',
+        warning: 'bg-yellow-50 border-yellow-300 text-yellow-800',
+        info: 'bg-blue-50 border-blue-300 text-blue-800'
+      }[type];
+      el.className = `${color} border rounded-lg p-3 mb-4`;
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function requestNotifications() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(p => {
+          if (p === 'granted') {
+            document.getElementById('notifyBtn').style.display = 'none';
+            showStatus('success', 'Notifications enabled for delays.');
+          }
+        });
+      }
+    }
+
+    document.getElementById('autoRefresh').addEventListener('change', e => {
+      if (e.target.checked) autoRefreshInterval = setInterval(fetchTrains, 60000);
+      else clearInterval(autoRefreshInterval);
+    });
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      document.getElementById('notifyBtn').style.display = 'none';
+    }
+
+    fetchTrains();
+    autoRefreshInterval = setInterval(fetchTrains, 60000);
+  </script>
+</body>
+</html>
