@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Train Times">
-    <title>Nearest Station to Moorgate - Live Train Times</title>
+    <title>Palmers Green to Moorgate - Live Train Times</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media (display-mode: standalone) {
@@ -33,7 +33,7 @@
             </div>
             
             <div class="text-sm text-gray-600 mb-3">
-                <div class="font-semibold" id="routeText">Loading route...</div>
+                <div class="font-semibold">Palmers Green → Moorgate</div>
                 <div class="flex items-center gap-2 mt-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -61,76 +61,17 @@
         <!-- Train List -->
         <div id="trainList" class="space-y-3">
             <div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
-                Fetching nearest station...
+                Click refresh to load train times
             </div>
         </div>
+
+
     </div>
 
     <script>
         let autoRefreshInterval;
+        const FROM_STATION = 'PAL';
         const TO_STATION = 'MOG';
-        const TO_STATION_NAME = 'Moorgate';
-        let currentStation = { code: 'PAL', name: 'Palmers Green' };
-        
-        // List of stations with approximate coordinates along the Great Northern route into Moorgate
-        const stations = [
-            { code: 'PAL', name: 'Palmers Green', lat: 51.6183, lon: -0.1108 },
-            { code: 'BOP', name: 'Bowes Park', lat: 51.6096, lon: -0.1233 },
-            { code: 'AAL', name: 'Alexandra Palace', lat: 51.5980, lon: -0.1200 },
-            { code: 'HRN', name: 'Hornsey', lat: 51.5900, lon: -0.1100 },
-            { code: 'HGY', name: 'Harringay', lat: 51.5800, lon: -0.1110 },
-            { code: 'FPK', name: 'Finsbury Park', lat: 51.5640, lon: -0.1060 },
-            { code: 'HHY', name: 'Highbury & Islington', lat: 51.5460, lon: -0.1040 },
-            { code: 'DYP', name: 'Drayton Park', lat: 51.5480, lon: -0.0950 },
-            { code: 'EXR', name: 'Essex Road', lat: 51.5380, lon: -0.0980 },
-            { code: 'OLD', name: 'Old Street', lat: 51.5260, lon: -0.0850 }
-        ];
-
-        function haversine(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        function getNearestStation(lat, lon) {
-            let nearest = stations[0];
-            let minDist = Infinity;
-            stations.forEach(st => {
-                const dist = haversine(lat, lon, st.lat, st.lon);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearest = st;
-                }
-            });
-            return nearest;
-        }
-
-        function requestUserLocation() {
-            if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const { latitude, longitude } = position.coords;
-                    const nearest = getNearestStation(latitude, longitude);
-                    currentStation = nearest;
-                    document.getElementById('routeText').textContent = `${currentStation.name} → ${TO_STATION_NAME}`;
-                    showStatus('success', `Nearest station detected: ${currentStation.name}`);
-                    fetchTrains();
-                }, err => {
-                    console.error(err);
-                    showStatus('warning', 'Could not determine location. Using default station.');
-                    document.getElementById('routeText').textContent = `${currentStation.name} → ${TO_STATION_NAME}`;
-                    fetchTrains();
-                });
-            } else {
-                showStatus('warning', 'Geolocation not supported. Using default station.');
-                document.getElementById('routeText').textContent = `${currentStation.name} → ${TO_STATION_NAME}`;
-                fetchTrains();
-            }
-        }
 
         async function fetchTrains() {
             const refreshIcon = document.getElementById('refreshIcon');
@@ -141,7 +82,7 @@
             statusMessage.classList.add('hidden');
             
             try {
-                const url = `https://huxley2.azurewebsites.net/departures/${currentStation.code}/to/${TO_STATION}/20`;
+                const url = `https://huxley2.azurewebsites.net/departures/${FROM_STATION}/to/${TO_STATION}/20`;
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
@@ -152,13 +93,14 @@
                     displayTrains(data.trainServices.slice(0, 12));
                     showStatus('success', 'Connected! Showing real-time trains from National Rail');
                     
+                    // Check for delays
                     const delayed = data.trainServices.filter(t => 
                         t.isCancelled || (t.etd && t.etd !== t.std && t.etd !== 'On time')
                     );
                     
                     if (delayed.length > 0 && Notification.permission === 'granted') {
                         new Notification('Train Delay Alert', {
-                            body: `${delayed.length} train(s) affected on ${currentStation.name} to ${TO_STATION_NAME} route`,
+                            body: `${delayed.length} train(s) affected on Palmers Green to Moorgate route`,
                             icon: '🚂'
                         });
                     }
@@ -210,7 +152,7 @@
                             <div class="flex items-center gap-3">
                                 <div>
                                     <div class="text-2xl font-bold text-gray-800">${scheduled}</div>
-                                    ${expected && expected !== scheduled && !isCancelled ? 
+                                    ${expected !== scheduled && !isCancelled ? 
                                         `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
                                 </div>
                             </div>
@@ -251,6 +193,7 @@
             }
         }
 
+        // Auto-refresh setup
         document.getElementById('autoRefresh').addEventListener('change', (e) => {
             if (e.target.checked) {
                 autoRefreshInterval = setInterval(fetchTrains, 60000);
@@ -259,12 +202,13 @@
             }
         });
 
+        // Hide notification button if already granted
         if ('Notification' in window && Notification.permission === 'granted') {
             document.getElementById('notifyBtn').style.display = 'none';
         }
 
-        // Initial call to determine nearest station and fetch trains
-        requestUserLocation();
+        // Initial load
+        fetchTrains();
         autoRefreshInterval = setInterval(fetchTrains, 60000);
     </script>
 </body>
