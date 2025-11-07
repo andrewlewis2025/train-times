@@ -235,7 +235,11 @@
                     }
                 }
                 
-                const url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
+                // For HOME mode, show all northbound trains (not filtered by destination)
+                // For OUT mode, filter to show only trains to Moorgate
+                const url = currentMode === 'home' 
+                    ? `https://huxley2.azurewebsites.net/departures/${fromStation}/20`
+                    : `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
