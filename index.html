@@ -1,206 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Train Times" />
-  <title>Nearest Great Northern Station - Live Train Times</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nearest Great Northern Station → Palmers Green</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @media (display-mode: standalone) {
-      body { padding-top: env(safe-area-inset-top); }
-    }
-  </style>
 </head>
-
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-  <div class="max-w-2xl mx-auto p-4">
-    <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
-      <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-2">
-          <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-          </svg>
-          <h1 class="text-2xl font-bold text-gray-800">Live Train Times</h1>
-        </div>
-        <button onclick="initApp()" id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
-          <svg id="refreshIcon" class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-            </path>
-          </svg>
-        </button>
-      </div>
-
-      <div class="text-sm text-gray-600 mb-3">
-        <div id="routeTitle" class="font-semibold">Finding nearest Great Northern station...</div>
-        <div class="flex items-center gap-2 mt-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-          <span id="lastUpdate">Awaiting location...</span>
-        </div>
-      </div>
-
-      <div id="statusMessage" class="mb-4 hidden"></div>
-    </div>
-
-    <div id="trainList" class="space-y-3">
-      <div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
-        Waiting for location access...
-      </div>
-    </div>
-  </div>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6">
+  <h1 class="text-2xl font-bold mb-4 text-center">Nearest Great Northern → Palmers Green</h1>
+  <div id="status" class="text-center text-gray-700 mb-4">Finding your location...</div>
+  <div id="results" class="max-w-2xl mx-auto bg-white shadow-md rounded-xl p-4"></div>
 
   <script>
-    const TO_STATION = 'MOG'; // Moorgate
-    const USERNAME = 'rttapi_andrewlewis2025';
-    const PASSWORD = '0fc978ce84810e6aba66b1769018f0df99689d16';
-    const MAPS_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // <-- replace this with your API key
-    let autoRefreshInterval;
+    const APP_ID = "e93db4ec";
+    const APP_KEY = "b85454249e10c63caf55d55de9bd7d73";
 
-    async function initApp() {
-      const refreshIcon = document.getElementById('refreshIcon');
-      refreshIcon.classList.add('animate-spin');
-      document.getElementById('statusMessage').classList.add('hidden');
-
-      if (!navigator.geolocation) {
-        showStatus('error', 'Geolocation is not supported by your browser');
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          await findNearestStation(lat, lng);
-        },
-        (err) => {
-          showStatus('error', 'Location access denied or unavailable');
-        }
-      );
+    async function getNearestStation(lat, lon) {
+      const url = `https://transportapi.com/v3/uk/places.json?lat=${lat}&lon=${lon}&type=train_station&app_id=${APP_ID}&app_key=${APP_KEY}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const stations = data.member.filter(s => s.name.includes("Great Northern") || s.network === "Great Northern");
+      return stations.length ? stations[0] : data.member[0];
     }
 
-    async function findNearestStation(lat, lng) {
-      const mapsUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=8000&type=train_station&keyword=Great%20Northern&key=${MAPS_KEY}`;
-      showStatus('info', 'Finding nearest Great Northern station...');
-
-      try {
-        const res = await fetch(mapsUrl);
-        const data = await res.json();
-
-        if (!data.results || data.results.length === 0) {
-          showStatus('error', 'No Great Northern station found nearby');
-          return;
-        }
-
-        const nearest = data.results[0];
-        const stationName = nearest.name;
-        const stationLat = nearest.geometry.location.lat;
-        const stationLng = nearest.geometry.location.lng;
-
-        const mapsLink = `https://www.google.com/maps/dir/?api=1&destination=${stationLat},${stationLng}&travelmode=walking`;
-        document.getElementById('routeTitle').innerHTML = `${stationName} → Moorgate <a href="${mapsLink}" target="_blank" class="text-indigo-600 underline ml-2">(Directions)</a>`;
-
-        // Convert station name to CRS code (limited demo mapping)
-        const crsMap = {
-          'Palmers Green Station': 'PAL',
-          'Bowes Park Station': 'BOP',
-          'Alexandra Palace Station': 'AAP',
-          'Hornsey Station': 'HRN',
-          'Finsbury Park Station': 'FPK'
-        };
-        const stationCode = crsMap[stationName] || 'PAL';
-
-        fetchTrains(stationCode);
-
-      } catch (error) {
-        showStatus('error', 'Error contacting Google Maps API: ' + error.message);
-      }
+    async function getTrainTimes(stationCode) {
+      const url = `https://transportapi.com/v3/uk/train/station/${stationCode}/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&darwin=true&train_status=passenger`;
+      const res = await fetch(url);
+      return res.json();
     }
 
-    async function fetchTrains(fromStation) {
-      const refreshIcon = document.getElementById('refreshIcon');
-      const trainList = document.getElementById('trainList');
+    function getGoogleMapsLink(from, to) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=walking`;
+    }
 
-      try {
-        const encodedAuth = btoa(`${USERNAME}:${PASSWORD}`);
-        const url = `https://api.rtt.io/api/v1/json/search/${fromStation}`;
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Basic ${encodedAuth}` }
+    function displayTrains(data, station, lat, lon) {
+      const container = document.getElementById("results");
+      const departures = data.departures.all.filter(t => t.destination_name.includes("Palmers Green"));
+      const mapsLink = getGoogleMapsLink(`${lat},${lon}`, station.name);
+      let html = `
+        <h2 class="text-xl font-semibold mb-2">${station.name}</h2>
+        <p class="text-sm mb-3">(${station.station_code}) - <a class="text-blue-600 underline" href="${mapsLink}" target="_blank">Walking directions</a></p>
+      `;
+      if (departures.length === 0) {
+        html += `<p>No upcoming trains towards Palmers Green found.</p>`;
+      } else {
+        html += `<ul class="divide-y divide-gray-200">`;
+        departures.slice(0, 5).forEach(train => {
+          html += `
+            <li class="py-2">
+              <div><strong>${train.destination_name}</strong></div>
+              <div>Departs: ${train.aimed_departure_time} → Expected: ${train.expected_departure_time}</div>
+              <div>Platform: ${train.platform || "—"}</div>
+            </li>
+          `;
         });
-
-        if (!response.ok) throw new Error(`RTT API error: ${response.status}`);
-
-        const data = await response.json();
-        const services = (data.services || []).filter(s =>
-          s.locationDetail.destinationList &&
-          s.locationDetail.destinationList.some(d => d.crs === TO_STATION)
-        );
-
-        if (services.length === 0) {
-          trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">No trains currently scheduled</div>';
-          showStatus('warning', 'No trains found for this route');
-          return;
-        }
-
-        displayTrains(services.slice(0, 10));
-        document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date().toLocaleTimeString('en-GB');
-        showStatus('success', 'Connected to RTT and showing live trains');
-      } catch (error) {
-        console.error(error);
-        trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-red-500">Failed to load train data</div>';
-        showStatus('error', error.message);
-      } finally {
-        refreshIcon.classList.remove('animate-spin');
+        html += `</ul>`;
       }
+      container.innerHTML = html;
     }
 
-    function displayTrains(trains) {
-      const trainList = document.getElementById('trainList');
-      trainList.innerHTML = trains.map(train => {
-        const detail = train.locationDetail;
-        const scheduled = detail.gbttBookedDeparture || detail.gbttBookedArrival;
-        const expected = detail.realtimeDeparture || detail.realtimeArrival;
-        const cancelled = train.isCancelled;
-        const delayed = expected && expected !== scheduled && !cancelled;
-        let status = 'On time', color = 'text-green-600';
-
-        if (cancelled) { status = 'Cancelled'; color = 'text-red-600'; }
-        else if (delayed) { status = 'Delayed'; color = 'text-yellow-600'; }
-
-        return `
-          <div class="bg-white rounded-lg shadow-md p-4 border-l-4 ${cancelled ? 'border-red-600' : delayed ? 'border-yellow-500' : 'border-green-500'}">
-            <div class="flex justify-between mb-1">
-              <div>
-                <div class="text-xl font-bold">${scheduled}</div>
-                ${expected && expected !== scheduled ? `<div class="text-sm text-red-600">Exp: ${expected}</div>` : ''}
-              </div>
-              <div class="font-semibold ${color}">${status}</div>
-            </div>
-            <div class="text-sm text-gray-600">Platform: ${detail.platform || 'TBC'} • Operator: ${train.atocName || 'Unknown'}</div>
-          </div>`;
-      }).join('');
+    function showError(message) {
+      document.getElementById("status").textContent = message;
     }
 
-    function showStatus(type, message) {
-      const el = document.getElementById('statusMessage');
-      const color = {
-        success: 'bg-green-50 border-green-300 text-green-800',
-        error: 'bg-red-50 border-red-300 text-red-800',
-        warning: 'bg-yellow-50 border-yellow-300 text-yellow-800',
-        info: 'bg-blue-50 border-blue-300 text-blue-800'
-      }[type];
-      el.className = `${color} border rounded-lg p-3 mb-4`;
-      el.textContent = message;
-      el.classList.remove('hidden');
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        document.getElementById("status").textContent = "Finding nearest station...";
+        const station = await getNearestStation(latitude, longitude);
+        document.getElementById("status").textContent = `Fetching trains from ${station.name}...`;
+        const data = await getTrainTimes(station.station_code);
+        document.getElementById("status").textContent = "";
+        displayTrains(data, station, latitude, longitude);
+      }, () => showError("Could not access location."));
+    } else {
+      showError("Geolocation not supported by your browser.");
     }
-
-    // Initialise on page load
-    initApp();
   </script>
 </body>
 </html>
