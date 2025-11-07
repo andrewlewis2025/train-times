@@ -1,380 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Train Times">
-    <title>Train Times - Palmers Green</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @media (display-mode: standalone) {
-            body { padding-top: env(safe-area-inset-top); }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Train Times" />
+  <title>Train Times - Palmers Green</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media (display-mode: standalone) {
+      body { padding-top: env(safe-area-inset-top); }
+    }
+  </style>
 </head>
+
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-    <div class="max-w-2xl mx-auto p-4">
-        <!-- Header with Mode Toggle -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                    <h1 class="text-2xl font-bold text-gray-800">Palmers Green Train Times</h1>
-                </div>
-                <button onclick="fetchTrains()" id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                    <svg id="refreshIcon" class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Mode Toggle Buttons -->
-            <div class="flex gap-2 mb-4">
-                <button onclick="setMode('out')" id="outBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md">
-                    OUT
-                </button>
-                <button onclick="setMode('home')" id="homeBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                    HOME
-                </button>
-            </div>
-            
-            <div class="text-sm text-gray-600 mb-3">
-                <div id="routeInfo" class="font-semibold">Palmers Green → Moorgate</div>
-                <div id="walkingTime" class="text-xs text-indigo-600 font-medium mt-1 hidden"></div>
-                <div class="flex items-center gap-2 mt-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span id="lastUpdate">Loading...</span>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 flex-wrap">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-indigo-600 rounded">
-                    <span class="text-sm text-gray-700">Auto-refresh</span>
-                </label>
-                
-                <button onclick="requestNotifications()" id="notifyBtn" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                    🔔 Enable alerts
-                </button>
-            </div>
+  <div class="max-w-2xl mx-auto p-4">
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <h1 class="text-2xl font-bold text-gray-800">Palmers Green Train Times</h1>
         </div>
+        <button onclick="fetchTrains()" id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <svg id="refreshIcon" class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
 
-        <!-- Status Message -->
-        <div id="statusMessage" class="mb-4 hidden"></div>
+      <div class="flex gap-2 mb-4">
+        <button onclick="setMode('out')" id="outBtn"
+          class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md">
+          OUT
+        </button>
+        <button onclick="setMode('home')" id="homeBtn"
+          class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+          HOME
+        </button>
+      </div>
 
-        <!-- Train List -->
-        <div id="trainList" class="space-y-3">
-            <div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
-                Click refresh to load train times
-            </div>
+      <div class="text-sm text-gray-600 mb-3">
+        <div id="routeInfo" class="font-semibold">Palmers Green → Moorgate</div>
+        <div id="walkingTime" class="text-xs text-indigo-600 font-medium mt-1 hidden"></div>
+        <div class="flex items-center gap-2 mt-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="lastUpdate">Loading...</span>
         </div>
+      </div>
+
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-indigo-600 rounded">
+          <span class="text-sm text-gray-700">Auto-refresh</span>
+        </label>
+        <button onclick="requestNotifications()" id="notifyBtn"
+          class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+          🔔 Enable alerts
+        </button>
+      </div>
     </div>
 
-    <script>
-        let autoRefreshInterval;
-        let currentMode = 'out';
-        let userLocation = null;
-        
-        // Great Northern stations on the line to Palmers Green (southbound stations)
-        const GREAT_NORTHERN_STATIONS = [
-            { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
-            { code: 'OLD', name: 'Old Street', lat: 51.5263, lon: -0.0877 },
-            { code: 'EXR', name: 'Essex Road', lat: 51.5394, lon: -0.1042 },
-            { code: 'HBY', name: 'Highbury & Islington', lat: 51.5461, lon: -0.1038 },
-            { code: 'DRN', name: 'Drayton Park', lat: 51.5531, lon: -0.1117 },
-            { code: 'FPK', name: 'Finsbury Park', lat: 51.5642, lon: -0.1065 },
-            { code: 'HRY', name: 'Harringay', lat: 51.5818, lon: -0.1094 },
-            { code: 'HPY', name: 'Hornsey', lat: 51.5875, lon: -0.1169 },
-            { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
-            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
-            { code: 'ARN', name: 'Arnos Grove', lat: 51.6163, lon: -0.1334 },
-            { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
-            { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 },
-            { code: 'ENF', name: 'Enfield Chase', lat: 51.6527, lon: -0.1047 },
-            { code: 'GNT', name: 'Gordon Hill', lat: 51.6781, lon: -0.0852 },
-            { code: 'CWN', name: 'Crews Hill', lat: 51.6945, lon: -0.0797 },
-            { code: 'CHN', name: 'Cuffley', lat: 51.7086, lon: -0.1021 }
-        ];
+    <div id="statusMessage" class="mb-4 hidden"></div>
 
-        const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
-        const MOORGATE = { code: 'MOG', name: 'Moorgate' };
+    <div id="trainList" class="space-y-3">
+      <div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
+        Click refresh to load train times
+      </div>
+    </div>
+  </div>
 
-        function setMode(mode) {
-            currentMode = mode;
-            const outBtn = document.getElementById('outBtn');
-            const homeBtn = document.getElementById('homeBtn');
-            
-            if (mode === 'out') {
-                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
-                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
-            } else {
-                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
-                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
-            }
-            
-            fetchTrains();
+  <script>
+    let autoRefreshInterval;
+    let currentMode = 'out';
+    let userLocation = null;
+
+    const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
+    const MOORGATE = { code: 'MOG', name: 'Moorgate' };
+
+    const GREAT_NORTHERN_STATIONS = [
+      { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
+      { code: 'FPK', name: 'Finsbury Park', lat: 51.5642, lon: -0.1065 },
+      { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
+      { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
+      { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
+      { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 }
+    ];
+
+    function setMode(mode) {
+      currentMode = mode;
+      const outBtn = document.getElementById('outBtn');
+      const homeBtn = document.getElementById('homeBtn');
+      if (mode === 'out') {
+        outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
+        homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
+      } else {
+        homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
+        outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
+      }
+      fetchTrains();
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function findNearestStation(lat, lon) {
+      let nearest = null, minDistance = Infinity;
+      for (const s of GREAT_NORTHERN_STATIONS) {
+        const d = calculateDistance(lat, lon, s.lat, s.lon);
+        if (d < minDistance) { minDistance = d; nearest = s; }
+      }
+      return { station: nearest, distance: minDistance };
+    }
+
+    async function getUserLocation() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) reject(new Error('Geolocation not supported'));
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+          err => reject(err),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+        );
+      });
+    }
+
+    async function fetchTrains() {
+      const refreshIcon = document.getElementById('refreshIcon');
+      const trainList = document.getElementById('trainList');
+      const statusMessage = document.getElementById('statusMessage');
+      const routeInfo = document.getElementById('routeInfo');
+      const walkingTimeEl = document.getElementById('walkingTime');
+      refreshIcon.classList.add('animate-spin');
+      statusMessage.classList.add('hidden');
+      walkingTimeEl.classList.add('hidden');
+
+      try {
+        let fromStation, toStation;
+        if (currentMode === 'out') {
+          fromStation = PALMERS_GREEN.code;
+          toStation = MOORGATE.code;
+          routeInfo.textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
+        } else {
+          showStatus('info', 'Getting your location...');
+          userLocation = await getUserLocation();
+          const { station } = findNearestStation(userLocation.lat, userLocation.lon);
+          fromStation = station.code;
+          toStation = PALMERS_GREEN.code;
+          routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
         }
 
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Earth's radius in km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
+        let url;
+        if (currentMode === 'home') {
+          url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
+        } else {
+          url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
         }
 
-        function findNearestStation(lat, lon) {
-            let nearest = null;
-            let minDistance = Infinity;
-            
-            for (const station of GREAT_NORTHERN_STATIONS) {
-                const distance = calculateDistance(lat, lon, station.lat, station.lon);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = station;
-                }
-            }
-            
-            return { station: nearest, distance: minDistance };
-        }
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const data = await res.json();
 
-        async function getWalkingTime(fromLat, fromLon, toLat, toLon) {
-            try {
-                // Using Google Maps Directions API would require an API key
-                // For now, estimate walking time: ~5km/h = ~80m/min
-                const distance = calculateDistance(fromLat, fromLon, toLat, toLon);
-                const walkingMinutes = Math.round((distance * 1000) / 80);
-                return walkingMinutes;
-            } catch (error) {
-                console.error('Error calculating walking time:', error);
-                return null;
-            }
-        }
-
-        async function getUserLocation() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error('Geolocation not supported'));
-                    return;
-                }
-                
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude
-                        });
-                    },
-                    (error) => {
-                        reject(error);
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-                );
-            });
-        }
-
-        async function fetchTrains() {
-            const refreshIcon = document.getElementById('refreshIcon');
-            const trainList = document.getElementById('trainList');
-            const statusMessage = document.getElementById('statusMessage');
-            const routeInfo = document.getElementById('routeInfo');
-            const walkingTimeEl = document.getElementById('walkingTime');
-            
-            refreshIcon.classList.add('animate-spin');
-            statusMessage.classList.add('hidden');
-            walkingTimeEl.classList.add('hidden');
-            
-            try {
-                let fromStation, toStation;
-                
-                if (currentMode === 'out') {
-                    fromStation = PALMERS_GREEN.code;
-                    toStation = MOORGATE.code;
-                    routeInfo.textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
-                } else {
-                    // HOME mode - get user location
-                    showStatus('info', 'Getting your location...');
-                    
-                    try {
-                        userLocation = await getUserLocation();
-                        const { station, distance } = findNearestStation(userLocation.lat, userLocation.lon);
-                        
-                        if (distance > 5) {
-                            showStatus('warning', 'You seem far from the Great Northern line. Showing nearest station anyway.');
-                        }
-                        
-                        fromStation = station.code;
-                        
-                        // Determine if user is north or south of Palmers Green
-                        const isNorthOfPalmersGreen = station.lat > PALMERS_GREEN.lat;
-                        
-                        routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
-                        
-                        // Calculate walking time
-                        const walkingMins = await getWalkingTime(
-                            userLocation.lat, userLocation.lon,
-                            station.lat, station.lon
-                        );
-                        
-                        if (walkingMins !== null) {
-                            walkingTimeEl.textContent = `🚶 ${walkingMins} min walk to ${station.name}`;
-                            walkingTimeEl.classList.remove('hidden');
-                        }
-                        
-                    } catch (locError) {
-                        showStatus('error', 'Could not get your location. Please enable location services.');
-                        refreshIcon.classList.remove('animate-spin');
-                        return;
-                    }
-                }
-                
-                // Build URL based on mode
-                let url;
-                if (currentMode === 'home') {
-                    // For HOME mode, get all departures and filter by calling point
-                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
-                } else {
-                    // For OUT mode, use destination filter
-                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
-                }
-                const response = await fetch(url);
-                
-                if (!response.ok) throw new Error(`API error: ${response.status}`);
-                
-                const data = await response.json();
-                
-                if (data.trainServices && data.trainServices.length > 0) {
-                    displayTrains(data.trainServices.slice(0, 12));
-                    showStatus('success', 'Connected! Showing real-time trains from National Rail');
-                    
-                    // Check for delays
-                    const delayed = data.trainServices.filter(t => 
-                        t.isCancelled || (t.etd && t.etd !== t.std && t.etd !== 'On time')
-                    );
-                    
-                    if (delayed.length > 0 && Notification.permission === 'granted') {
-                        new Notification('Train Delay Alert', {
-                            body: `${delayed.length} train(s) affected on your route`,
-                            icon: '🚂'
-                        });
-                    }
-                } else {
-                    trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">No trains currently scheduled</div>';
-                    showStatus('warning', 'No trains found for this route');
-                }
-                
-                document.getElementById('lastUpdate').textContent = 
-                    'Last updated: ' + new Date().toLocaleTimeString('en-GB');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showStatus('error', `Failed to fetch train times: ${error.message}`);
-                trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-red-500">Failed to load trains. Please try again.</div>';
-            } finally {
-                refreshIcon.classList.remove('animate-spin');
-            }
-        }
-
-        function displayTrains(trains) {
-            const trainList = document.getElementById('trainList');
-            trainList.innerHTML = trains.map(train => {
-                const scheduled = train.std || train.sta;
-                const expected = train.etd || train.eta;
-                const isCancelled = train.isCancelled;
-                const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
-                
-                let status = 'On time';
-                let statusColor = 'text-green-600';
-                let statusBg = 'bg-green-50';
-                let borderColor = 'border-green-500';
-                
-                if (isCancelled) {
-                    status = 'Cancelled';
-                    statusColor = 'text-red-800';
-                    statusBg = 'bg-red-100';
-                    borderColor = 'border-red-800';
-                } else if (isDelayed) {
-                    status = 'Delayed';
-                    statusColor = 'text-red-600';
-                    statusBg = 'bg-red-50';
-                    borderColor = 'border-red-500';
-                }
-                
-                return `
-                    <div class="bg-white rounded-lg shadow-md p-4 ${statusBg} border-l-4 ${borderColor}">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-3">
-                                <div>
-                                    <div class="text-2xl font-bold text-gray-800">${scheduled}</div>
-                                    ${expected !== scheduled && !isCancelled ? 
-                                        `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
-                                </div>
-                            </div>
-                            <div class="font-semibold text-right ${statusColor}">
-                                ${status}
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                            <div><span class="font-medium">Platform:</span> ${train.platform || 'TBC'}</div>
-                            <div><span class="font-medium">Operator:</span> ${train.operator || 'Unknown'}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function showStatus(type, message) {
-            const statusMessage = document.getElementById('statusMessage');
-            const colors = {
-                success: 'bg-green-50 border-green-200 text-green-800',
-                error: 'bg-red-50 border-red-200 text-red-800',
-                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-                info: 'bg-blue-50 border-blue-200 text-blue-800'
-            };
-            
-            statusMessage.className = `${colors[type]} border rounded-lg p-4 mb-4`;
-            statusMessage.innerHTML = `<div class="text-sm">${message}</div>`;
-            statusMessage.classList.remove('hidden');
-        }
-
-        function requestNotifications() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        document.getElementById('notifyBtn').style.display = 'none';
-                        showStatus('success', 'Notifications enabled! You\'ll be alerted of delays.');
-                    }
-                });
-            }
-        }
-
-        // Auto-refresh setup
-        document.getElementById('autoRefresh').addEventListener('change', (e) => {
-            if (e.target.checked) {
-                autoRefreshInterval = setInterval(fetchTrains, 60000);
-            } else {
-                clearInterval(autoRefreshInterval);
-            }
-        });
-
-        // Hide notification button if already granted
-        if ('Notification' in window && Notification.permission === 'granted') {
-            document.getElementById('notifyBtn').style.display = 'none';
-        }
-
-        // Initial load
-        fetchTrains();
-        autoRefreshInterval = setInterval(fetchTrains, 60000);
-    </script>
-</body>
-</html>
+        if (data.trainServices && data.trainServices.length > 0) {
+          displayTrains(data.trainServices.slice(0, 12));
+          showStatus('succes
