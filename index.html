@@ -107,6 +107,126 @@
         const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
         const MOORGATE = { code: 'MOG', name: 'Moorgate' };
 
+        const PALMERS_GREEN_NAME_PATTERNS = ['palmers green', "palmer's green", 'palmersgreen'];
+        const PALMERS_GREEN_CODES = new Set([PALMERS_GREEN.code]);
+        const PALMERS_GREEN_TIPLOC_SNIPPETS = ['PALMRSG', 'PALMERS'];
+        const PALMERS_GREEN_CHILD_KEYS = new Set([
+            'callingPoint',
+            'callingPoints',
+            'callingPointList',
+            'subsequentCallingPoints',
+            'previousCallingPoints',
+            'destination',
+            'destinations',
+            'serviceDestinations',
+            'currentOrigins',
+            'currentDestinations',
+            'origin',
+            'origins',
+            'serviceOrigins',
+            'stops',
+            'via',
+            'locationName',
+            'stationName',
+            'displayAs',
+            'serviceDestinationText'
+        ]);
+
+        function stringMatchesPalmersGreen(value = '') {
+            if (!value) return false;
+            const normalized = value.toString().toLowerCase();
+            return PALMERS_GREEN_NAME_PATTERNS.some(pattern => normalized.includes(pattern));
+        }
+
+        function codeMatchesPalmersGreen(value = '') {
+            if (!value) return false;
+            const upper = value.toString().toUpperCase();
+            return PALMERS_GREEN_CODES.has(upper) || PALMERS_GREEN_TIPLOC_SNIPPETS.some(snippet => upper.includes(snippet));
+        }
+
+        function matchesPalmersGreen(entry = {}) {
+            if (!entry || typeof entry !== 'object') return false;
+
+            if (
+                stringMatchesPalmersGreen(entry.locationName) ||
+                stringMatchesPalmersGreen(entry.stationName) ||
+                stringMatchesPalmersGreen(entry.displayAs) ||
+                stringMatchesPalmersGreen(entry.location) ||
+                stringMatchesPalmersGreen(entry.serviceDestinationText)
+            ) {
+                return true;
+            }
+
+            return (
+                codeMatchesPalmersGreen(entry.crs) ||
+                codeMatchesPalmersGreen(entry.crsCode) ||
+                codeMatchesPalmersGreen(entry.tiploc) ||
+                codeMatchesPalmersGreen(entry.tpl)
+            );
+        }
+
+        function structureContainsPalmersGreen(value, seen = new Set()) {
+            if (value === null || value === undefined) {
+                return false;
+            }
+
+            if (typeof value === 'string' || typeof value === 'number') {
+                return (
+                    stringMatchesPalmersGreen(value) ||
+                    codeMatchesPalmersGreen(value)
+                );
+            }
+
+            if (typeof value !== 'object') {
+                return false;
+            }
+
+            if (seen.has(value)) {
+                return false;
+            }
+
+            seen.add(value);
+
+            if (Array.isArray(value)) {
+                return value.some(item => structureContainsPalmersGreen(item, seen));
+            }
+
+            if (matchesPalmersGreen(value)) {
+                return true;
+            }
+
+            for (const [key, nested] of Object.entries(value)) {
+                if (nested === undefined || nested === null) continue;
+
+                const shouldInspect = PALMERS_GREEN_CHILD_KEYS.has(key) || typeof nested === 'object';
+
+                if (!shouldInspect) {
+                    continue;
+                }
+
+                if (structureContainsPalmersGreen(nested, seen)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function trainStopsAtPalmersGreen(train = {}) {
+            const FUTURE_SEARCH_FIELDS = [
+                'destination',
+                'subsequentCallingPoints',
+                'callingPoints',
+                'stops',
+                'serviceDestinations',
+                'serviceDestinationText'
+            ];
+
+            return FUTURE_SEARCH_FIELDS.some(function(field) {
+                return structureContainsPalmersGreen(train && train[field]);
+            });
+        }
+
         function setMode(mode) {
             currentMode = mode;
             const outBtn = document.getElementById('outBtn');
@@ -245,10 +365,10 @@
                 let url;
                 if (currentMode === 'out') {
                     // OUT mode: specific destination (Moorgate)
-                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20?expand=true`;
                 } else {
                     // HOME mode: all departures, we'll filter for Palmers Green
-                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20`;
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
                 }
                 const response = await fetch(url);
                 
@@ -262,28 +382,7 @@
                     
                     if (filterDestination) {
                         // Filter for trains that stop at Palmers Green
-                        trainsToShow = data.trainServices.filter(train => {
-                            if (!train.destination || !train.destination[0]) return false;
-                            
-                            // Check if Palmers Green is the destination
-                            const destinationName = train.destination[0].locationName.toLowerCase();
-                            if (destinationName.includes('palmers green')) return true;
-                            
-                            // Check subsequent calling points
-                            if (train.subsequentCallingPoints && train.subsequentCallingPoints.length > 0) {
-                                for (const callingPointList of train.subsequentCallingPoints) {
-                                    if (callingPointList.callingPoint) {
-                                        for (const point of callingPointList.callingPoint) {
-                                            if (point.locationName.toLowerCase().includes('palmers green')) {
-                                                return true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            return false;
-                        });
+                        trainsToShow = data.trainServices.filter(trainStopsAtPalmersGreen);
                     }
                     
                     if (trainsToShow.length > 0) {
