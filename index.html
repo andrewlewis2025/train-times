@@ -286,52 +286,51 @@
         }
 
         function displayTrains(trains) {
-            const trainList = document.getElementById('trainList');
-            trainList.innerHTML = trains.map(train => {
-                const scheduled = train.std || train.sta;
-                const expected = train.etd || train.eta;
-                const isCancelled = train.isCancelled;
-                const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
-                
-                let status = 'On time';
-                let statusColor = 'text-green-600';
-                let statusBg = 'bg-green-50';
-                let borderColor = 'border-green-500';
-                
-                if (isCancelled) {
-                    status = 'Cancelled';
-                    statusColor = 'text-red-800';
-                    statusBg = 'bg-red-100';
-                    borderColor = 'border-red-800';
-                } else if (isDelayed) {
-                    status = 'Delayed';
-                    statusColor = 'text-red-600';
-                    statusBg = 'bg-red-50';
-                    borderColor = 'border-red-500';
-                }
-                
-                return `
-                    <div class="bg-white rounded-lg shadow-md p-4 ${statusBg} border-l-4 ${borderColor}">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-3">
-                                <div>
-                                    <div class="text-2xl font-bold text-gray-800">${scheduled}</div>
-                                    ${expected !== scheduled && !isCancelled ? 
-                                        `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
-                                </div>
-                            </div>
-                            <div class="font-semibold text-right ${statusColor}">
-                                ${status}
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                            <div><span class="font-medium">Platform:</span> ${train.platform || 'TBC'}</div>
-                            <div><span class="font-medium">Operator:</span> ${train.operator || 'Unknown'}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+    const trainList = document.getElementById('trainList');
+    trainList.innerHTML = trains.map(train => {
+        const scheduled = train.std || train.sta;
+        const expected = train.etd || train.eta;
+        const isCancelled = train.isCancelled;
+        const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
+        
+        let status = 'On time';
+        let statusColor = 'text-green-600';
+        let statusBg = 'bg-green-50';
+        let borderColor = 'border-green-500';
+        
+        if (isCancelled) {
+            status = 'Cancelled';
+            statusColor = 'text-red-800';
+            statusBg = 'bg-red-100';
+            borderColor = 'border-red-800';
+        } else if (isDelayed) {
+            status = 'Delayed';
+            statusColor = 'text-red-600';
+            statusBg = 'bg-red-50';
+            borderColor = 'border-red-500';
         }
+
+        return `
+            <div class="bg-white rounded-lg shadow-md p-4 ${statusBg} border-l-4 ${borderColor}">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800">${scheduled}</div>
+                        ${expected !== scheduled && !isCancelled ? `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
+                    </div>
+                    <div class="font-semibold text-right ${statusColor}">
+                        ${status}
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                    <div><span class="font-medium">Destination:</span> ${train.destination?.[0]?.locationName || 'Unknown'}</div>
+                    <div><span class="font-medium">Platform:</span> ${train.platform || 'TBC'}</div>
+                    <div><span class="font-medium">Operator:</span> ${train.operator || 'Unknown'}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 
         function showStatus(type, message) {
             const statusMessage = document.getElementById('statusMessage');
