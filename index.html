@@ -82,9 +82,8 @@
         let currentMode = 'out';
         let userLocation = null;
         
-        // All Great Northern stations on the line through Palmers Green
+        // Great Northern stations SOUTH of Palmers Green (stations you'd travel from when going home)
         const GREAT_NORTHERN_STATIONS = [
-            // South of Palmers Green (northbound to PAL)
             { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
             { code: 'OLD', name: 'Old Street', lat: 51.5263, lon: -0.0877 },
             { code: 'EXR', name: 'Essex Road', lat: 51.5394, lon: -0.1042 },
@@ -94,14 +93,7 @@
             { code: 'HRY', name: 'Harringay', lat: 51.5818, lon: -0.1094 },
             { code: 'HPY', name: 'Hornsey', lat: 51.5875, lon: -0.1169 },
             { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
-            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
-            // North of Palmers Green (southbound to PAL)
-            { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
-            { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 },
-            { code: 'ENF', name: 'Enfield Chase', lat: 51.6527, lon: -0.1047 },
-            { code: 'GNT', name: 'Gordon Hill', lat: 51.6781, lon: -0.0852 },
-            { code: 'CWN', name: 'Crews Hill', lat: 51.6945, lon: -0.0797 },
-            { code: 'CHN', name: 'Cuffley', lat: 51.7086, lon: -0.1021 }
+            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 }
         ];
 
         const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
@@ -196,15 +188,14 @@
             walkingTimeEl.classList.add('hidden');
             
             try {
-                let fromStation, toStation, filterDestination = false;
+                let fromStation, toStation;
                 
                 if (currentMode === 'out') {
-                    // OUT mode: Palmers Green to Moorgate (southbound)
                     fromStation = PALMERS_GREEN.code;
                     toStation = MOORGATE.code;
                     routeInfo.textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
                 } else {
-                    // HOME mode - get user location and find trains TO Palmers Green
+                    // HOME mode - get user location
                     showStatus('info', 'Getting your location...');
                     
                     try {
@@ -217,7 +208,6 @@
                         
                         fromStation = station.code;
                         toStation = PALMERS_GREEN.code;
-                        filterDestination = true; // We'll filter for trains stopping at Palmers Green
                         routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
                         
                         // Calculate walking time
@@ -226,11 +216,8 @@
                             station.lat, station.lon
                         );
                         
-                        // Create Google Maps walking directions link
-                        const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lon}&destination=${station.lat},${station.lon}&travelmode=walking`;
-                        
                         if (walkingMins !== null) {
-                            walkingTimeEl.innerHTML = `🚶 <a href="${mapsUrl}" target="_blank" class="underline hover:text-indigo-800">${walkingMins} min walk to ${station.name}</a>`;
+                            walkingTimeEl.textContent = `🚶 ${walkingMins} min walk to ${station.name}`;
                             walkingTimeEl.classList.remove('hidden');
                         }
                         
@@ -241,58 +228,16 @@
                     }
                 }
                 
-                // Fetch trains
-                let url;
-                if (currentMode === 'out') {
-                    // OUT mode: specific destination (Moorgate)
-                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
-                } else {
-                    // HOME mode: all departures, we'll filter for Palmers Green
-                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20`;
-                }
+                const url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 
                 const data = await response.json();
                 
-                // Filter for trains going to Palmers Green (HOME mode only)
                 if (data.trainServices && data.trainServices.length > 0) {
-                    let trainsToShow = data.trainServices;
-                    
-                    if (filterDestination) {
-                        // Filter for trains that stop at Palmers Green
-                        trainsToShow = data.trainServices.filter(train => {
-                            if (!train.destination || !train.destination[0]) return false;
-                            
-                            // Check if Palmers Green is the destination
-                            const destinationName = train.destination[0].locationName.toLowerCase();
-                            if (destinationName.includes('palmers green')) return true;
-                            
-                            // Check subsequent calling points
-                            if (train.subsequentCallingPoints && train.subsequentCallingPoints.length > 0) {
-                                for (const callingPointList of train.subsequentCallingPoints) {
-                                    if (callingPointList.callingPoint) {
-                                        for (const point of callingPointList.callingPoint) {
-                                            if (point.locationName.toLowerCase().includes('palmers green')) {
-                                                return true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            return false;
-                        });
-                    }
-                    
-                    if (trainsToShow.length > 0) {
-                        displayTrains(trainsToShow.slice(0, 12));
-                        showStatus('success', 'Connected! Showing real-time trains from National Rail');
-                    } else {
-                        trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">No trains stopping at Palmers Green found</div>';
-                        showStatus('warning', 'No trains stopping at Palmers Green from this station');
-                    }
+                    displayTrains(data.trainServices.slice(0, 12));
+                    showStatus('success', 'Connected! Showing real-time trains from National Rail');
                     
                     // Check for delays
                     const delayed = data.trainServices.filter(t => 
@@ -330,11 +275,6 @@
                 const isCancelled = train.isCancelled;
                 const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
                 
-                // Get destination
-                const destination = train.destination && train.destination[0] 
-                    ? train.destination[0].locationName 
-                    : 'Unknown';
-                
                 let status = 'On time';
                 let statusColor = 'text-green-600';
                 let statusBg = 'bg-green-50';
@@ -358,7 +298,6 @@
                             <div class="flex items-center gap-3">
                                 <div>
                                     <div class="text-2xl font-bold text-gray-800">${scheduled}</div>
-                                    <div class="text-xs text-gray-500">to ${destination}</div>
                                     ${expected !== scheduled && !isCancelled ? 
                                         `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
                                 </div>
