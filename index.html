@@ -1,361 +1,190 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gemini Train Times</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
-  }
+<head>
+<meta charset="UTF‑8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Train Times – Palmers Green</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+<div class="max-w-2xl mx-auto p-4">
+<!-- Header with mode toggle -->
+<div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor"
+stroke-width="2" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round"
+d="M3 10h1l2 9h12l2-9h1"></path>
+</svg>
+<h1 class="text-2xl font-bold text-gray-800">Train Times</h1>
+</div>
+<button onclick="refreshHome()" id="refreshBtn"
+class="flex items-center gap-1 text-indigo-600">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
+viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round"
+d="M4 4v6h6M20 20v-6h-6M9 14l-5 5m0 0l5 5m-5-5h14m-7-7l5-5m0 0l-5-5m5 5H5"></path>
+</svg>
+Home
+</button>
+</div>
+<p id="status" class="text-gray-500 mb-2"></p>
+<div id="results" class="space-y-4"></div>
+</div>
+</div>
+<script>
+/*
+* Configuration: list of nearby Great Northern stations with codes and coords.
+* To add or remove stations, update this array. Coordinates are approximate.
+*/
+const stations = [
+{name: 'Winchmore Hill', code: 'WMH', lat: 51.6332, lon: -0.0980},
+{name: 'Grange Park', code: 'GPK', lat: 51.6342, lon: -0.1023},
+{name: 'Palmers Green', code: 'PAL', lat: 51.6183, lon: -0.1104},
+{name: 'Bowes Park', code: 'BOP', lat: 51.6075, lon: -0.1221},
+{name: 'Alexandra Palace', code: 'AAP', lat: 51.5980, lon: -0.1209}
+];
+
+/*
+* Compute haversine distance in kilometres between two lat/lon points.
+*/
+function haversine(lat1, lon1, lat2, lon2) {
+const toRad = deg => deg * Math.PI / 180;
+const R = 6371; // Earth radius in km
+const dLat = toRad(lat2 - lat1);
+const dLon = toRad(lon2 - lon1);
+const a =
+Math.sin(dLat/2) * Math.sin(dLat/2) +
+Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+Math.sin(dLon/2) * Math.sin(dLon/2);
+return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+
+/*
+* Find the nearest station to the user’s coordinates.
+* Optionally skip Palmers Green itself for departure purposes.
+*/
+function findNearestStation(userLat, userLon) {
+let best = null;
+for (const st of stations) {
+if (st.code === 'PAL') continue; // skip Palmers Green as origin
+const distance = haversine(userLat, userLon, st.lat, st.lon);
+if (!best || distance < best.distance) {
+best = {station: st, distance};
+}
+}
+return best.station;
+}
+
+/*
+* Fetch live departures from Huxley2 (or similar) and find services calling at Palmers Green.
+* You must supply your own accessToken obtained from National Rail Enquiries. The API
+* returns departures for a station code; then for each service we request details to
+* see if Palmers Green appears in the calling points.
+*/
+async function fetchTrainsForStation(stationCode) {
+const token = '<YOUR_ACCESS_TOKEN_HERE>'; // replace with your token
+const departuresUrl = `https://huxley2.azurewebsites.net/all/${stationCode}/50?accessToken=${token}&expand=true`;
+const resp = await fetch(departuresUrl);
+if (!resp.ok) throw new Error('Failed to fetch departures');
+const data = await resp.json();
+const filteredServices = [];
+// iterate through each service to see if Palmers Green appears
+for (const service of data.trainServices || []) {
+const callingPoints = (service.subsequentCallingPoints?.[0]?.callingPoint || [])
+.map(pt => pt.locationName.toLowerCase());
+if (callingPoints.includes('palmers green')) {
+filteredServices.push({
+std: service.std,
+etd: service.etd,
+destination: service.destination[0]?.locationName,
+serviceId: service.serviceID
+});
+}
+}
+return filteredServices;
+}
+
+/*
+* Build a Google Maps walking directions URL for the user’s location to a station.
+*/
+function buildWalkingLink(userLat, userLon, destLat, destLon) {
+return `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${destLat},${destLon}&travelmode=walking`;
+}
+
+/*
+* Main refresh logic. Requests geolocation, finds nearest station, fetches trains, and updates UI.
+*/
+async function refreshHome() {
+const statusEl = document.getElementById('status');
+const resultsEl = document.getElementById('results');
+statusEl.textContent = 'Determining your location…';
+resultsEl.innerHTML = '';
+try {
+// Request geolocation; fallback to Winchmore Hill if denied
+const position = await new Promise((resolve, reject) => {
+navigator.geolocation.getCurrentPosition(resolve, reject, {timeout: 8000});
+});
+const userLat = position.coords.latitude;
+const userLon = position.coords.longitude;
+const nearest = findNearestStation(userLat, userLon);
+statusEl.textContent = `Nearest station: ${nearest.name} (looking for trains to Palmers Green…)`;
+
+// Fetch departures that call at Palmers Green
+let services = await fetchTrainsForStation(nearest.code);
+// Fallback: if none found, try next‑nearest station (excluding the first)
+if (services.length === 0) {
+statusEl.textContent += ' – no direct trains found; checking next‑nearest station…';
+const sorted = stations
+.filter(st => st.code !== 'PAL' && st.code !== nearest.code)
+.map(st => ({st, dist: haversine(userLat, userLon, st.lat, st.lon)}))
+.sort((a,b) => a.dist - b.dist);
+for (const candidate of sorted) {
+services = await fetchTrainsForStation(candidate.st.code);
+if (services.length) {
+statusEl.textContent = `Nearest usable station: ${candidate.st.name}`;
+nearest.lat = candidate.st.lat;
+nearest.lon = candidate.st.lon;
+break;
+}
+}
+}
+
+if (services.length === 0) {
+statusEl.textContent = 'Sorry, no trains to Palmers Green found from nearby stations.';
+return;
+}
+
+// Build Google Maps link
+const walkLink = buildWalkingLink(userLat, userLon, nearest.lat, nearest.lon);
+
+// Render results
+const linkEl = document.createElement('a');
+linkEl.href = walkLink;
+linkEl.target = '_blank';
+linkEl.className = 'text-indigo-600 underline';
+linkEl.textContent = `Walk to ${nearest.name}`;
+resultsEl.appendChild(linkEl);
+
+const list = document.createElement('ul');
+list.className = 'divide-y divide-gray-200 mt-2';
+for (const svc of services.slice(0, 5)) {
+const li = document.createElement('li');
+li.className = 'py-2';
+li.textContent =
+`Departs ${svc.std} (expected ${svc.etd}) – destination ${svc.destination}`;
+list.appendChild(li);
+}
+resultsEl.appendChild(list);
+
+} catch (err) {
+statusEl.textContent = 'Unable to get location or train data: ' + err.message;
+}
+}
+
+// Immediately fetch on page load
+refreshHome();
 </script>
-  </head>
-  <body class="bg-gray-100 dark:bg-gray-900">
-    <div id="root"></div>
-    <script type="module">
-      import React, { useState, useCallback, useEffect } from 'react';
-      import ReactDOM from 'react-dom/client';
-      import { GoogleGenAI, Type } from '@google/genai';
-
-      // --- Constants ---
-      const DESTINATION_STATION_NAME = 'Palmers Green';
-      const GREAT_NORTHERN_STATIONS = [
-        // Hertford Loop
-        { name: 'Moorgate', code: 'MOO', lat: 51.5186, lon: -0.0886 },
-        { name: 'Old Street', code: 'OLD', lat: 51.5256, lon: -0.0875 },
-        { name: 'Essex Road', code: 'EXR', lat: 51.5333, lon: -0.0969 },
-        { name: 'Highbury & Islington', code: 'HHY', lat: 51.5472, lon: -0.1050 },
-        { name: 'Drayton Park', code: 'DYP', lat: 51.5516, lon: -0.1062 },
-        { name: 'Finsbury Park', code: 'FPK', lat: 51.5647, lon: -0.1067 },
-        { name: 'Harringay', code: 'HGY', lat: 51.5786, lon: -0.1075 },
-        { name: 'Hornsey', code: 'HRN', lat: 51.5883, lon: -0.1147 },
-        { name: 'Alexandra Palace', code: 'AAP', lat: 51.5980, lon: -0.1209 },
-        { name: 'Bowes Park', code: 'BOP', lat: 51.6075, lon: -0.1221 },
-        { name: 'Winchmore Hill', code: 'WMH', lat: 51.6332, lon: -0.0980 },
-        { name: 'Grange Park', code: 'GPK', lat: 51.6342, lon: -0.1023 },
-        { name: 'Enfield Chase', code: 'ENC', lat: 51.6521, lon: -0.0889 },
-        { name: 'Gordon Hill', code: 'GDH', lat: 51.6611, lon: -0.0800 },
-        { name: 'Crews Hill', code: 'CWH', lat: 51.6766, lon: -0.0768 },
-        { name: 'Cuffley', code: 'CUF', lat: 51.6963, lon: -0.0549 },
-        { name: 'Bayford', code: 'BFR', lat: 51.7456, lon: -0.0515 },
-        { name: 'Hertford North', code: 'HFN', lat: 51.7997, lon: -0.0811 },
-        // East Coast Main Line branch
-        { name: 'London Kings Cross', code: 'KGX', lat: 51.5323, lon: -0.1233 },
-        { name: 'New Southgate', code: 'NSG', lat: 51.6111, lon: -0.1364 },
-        { name: 'Oakleigh Park', code: 'OKL', lat: 51.6288, lon: -0.1633 },
-        { name: 'New Barnet', code: 'NBA', lat: 51.6492, lon: -0.1772 },
-        { name: 'Hadley Wood', code: 'HDW', lat: 51.6631, lon: -0.1872 },
-        { name: 'Potters Bar', code: 'PBR', lat: 51.6917, lon: -0.1747 },
-        { name: 'Brookmans Park', code: 'BPK', lat: 51.7208, lon: -0.1856 },
-        { name: 'Welham Green', code: 'WMG', lat: 51.7397, lon: -0.1983 },
-        { name: 'Hatfield', code: 'HAT', lat: 51.7631, lon: -0.2206 },
-        { name: 'Welwyn Garden City', code: 'WGC', lat: 51.8028, lon: -0.2033 },
-        { name: 'Welwyn North', code: 'WLW', lat: 51.8239, lon: -0.1919 },
-        { name: 'Knebworth', code: 'KBW', lat: 51.8617, lon: -0.1942 },
-        { name: 'Stevenage', code: 'SVG', lat: 51.9025, lon: -0.2050 },
-        { name: 'Hitchin', code: 'HIT', lat: 51.9547, lon: -0.2742 },
-        { name: 'Letchworth Garden City', code: 'LET', lat: 51.9772, lon: -0.2272 },
-        { name: 'Baldock', code: 'BDK', lat: 52.0253, lon: -0.1878 },
-        { name: 'Ashwell & Morden', code: 'AWM', lat: 52.0444, lon: -0.1067 },
-        { name: 'Royston', code: 'RYS', lat: 52.0486, lon: -0.0169 },
-        { name: 'Meldreth', code: 'MEL', lat: 52.0911, lon: 0.0108 },
-        { name: 'Shepreth', code: 'STH', lat: 52.1150, lon: 0.0400 },
-        { name: 'Foxton', code: 'FXN', lat: 52.1283, lon: 0.0617 },
-        { name: 'Cambridge', code: 'CBG', lat: 52.1939, lon: 0.1367 },
-        { name: 'Cambridge North', code: 'CMB', lat: 52.2217, lon: 0.1519 },
-      ];
-
-      // --- Geolocation Utilities ---
-      function buildWalkingLink(userLat, userLon, destLat, destLon) {
-        return `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${destLat},${destLon}&travelmode=walking`;
-      }
-
-      // --- Gemini Service ---
-      if (!process.env.API_KEY) {
-        throw new Error("API_KEY environment variable is not set.");
-      }
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const trainServiceSchema = {
-        type: Type.OBJECT,
-        properties: {
-          std: {
-            type: Type.STRING,
-            description: 'Scheduled Time of Departure in HH:mm format.',
-          },
-          etd: {
-            type: Type.STRING,
-            description: "Estimated Time of Departure. Can be 'On time' or a HH:mm time if delayed.",
-          },
-          destination: {
-            type: Type.STRING,
-            description: 'The final destination of this train service.',
-          },
-          platform: {
-            type: Type.STRING,
-            description: 'The platform number for departure, e.g., "1", "2A".',
-          },
-        },
-        required: ['std', 'etd', 'destination', 'platform'],
-      };
-
-      const fetchTrainServices = async (fromStationName, toStationName) => {
-        const prompt = `
-          You are an expert UK National Rail data provider.
-          Generate a realistic, but fictional, list of the next 5 upcoming train departures from "${fromStationName}" that call at "${toStationName}".
-          The final destination of these services should be a plausible station on a route passing through "${toStationName}", such as "Moorgate" or "Hertford North".
-          Departure times should be sequential and start from the current time.
-          Include some slight, realistic delays. For example, a train scheduled at 17:05 might be expected at 17:08. If a train is on time, the 'etd' should be 'On time'.
-        `;
-        try {
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: Type.ARRAY,
-                items: trainServiceSchema,
-              },
-            },
-          });
-          const jsonText = response.text.trim();
-          if (!jsonText) {
-            console.warn('Gemini returned an empty response.');
-            return [];
-          }
-          return JSON.parse(jsonText);
-        } catch (error) {
-          console.error('Error fetching or parsing train services from Gemini:', error);
-          return [];
-        }
-      };
-
-      // --- Icon Components ---
-      const TrainIcon = (props) => (
-        React.createElement('svg', { ...props, xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 1.5 },
-          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M6.115 5.115A9 9 0 0112 3c1.78 0 3.44.522 4.885 1.42l.02.012M6.115 5.115a9 9 0 00-4.885 1.42l-.02.012A9 9 0 003 12c0 1.78.522 3.44 1.42 4.885l.012.02M17.885 5.115a9 9 0 014.885 1.42l.02-.012A9 9 0 0121 12c0 1.78-.522 3.44-1.42 4.885l-.012.02m-10.536-1.42a4.5 4.5 0 016.364 0" }),
-          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 12.75h.008v.008H12v-.008zM12 15a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" }),
-          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3.75 6.75h16.5M3.75 17.25h16.5" })
-        )
-      );
-      const RefreshIcon = (props) => (
-        React.createElement('svg', { ...props, xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 },
-          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M4 4v5h5M20 20v-5h-5M4 4l5 5M20 20l-5-5" })
-        )
-      );
-      const MapPinIcon = (props) => (
-        React.createElement('svg', { ...props, xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor" },
-          React.createElement('path', { fillRule: "evenodd", d: "M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.976 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.573c.31.193.57.337.757.433.09.046.18.09.28.14l.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z", clipRule: "evenodd" })
-        )
-      );
-
-      // --- UI Components ---
-      const Spinner = () => (
-        React.createElement('svg', { className: "w-12 h-12 text-indigo-600 dark:text-indigo-400 animate-spin", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24" },
-          React.createElement('circle', { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }),
-          React.createElement('path', { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })
-        )
-      );
-      
-      const ErrorDisplay = ({ error }) => {
-        if (!error) return null;
-        return React.createElement('div', { className: "p-4 my-4 text-sm text-red-800 bg-red-100 border-l-4 border-red-500 dark:bg-red-900/30 dark:text-red-300 dark:border-red-600", role: "alert" },
-          React.createElement('p', { className: "font-bold" }, 'Error'),
-          React.createElement('p', null, error)
-        );
-      };
-      
-      const StatusDisplay = ({ isLoading, statusMessage }) => {
-        if (!isLoading) return null;
-        return React.createElement('div', { className: "flex flex-col items-center justify-center p-8 text-center bg-gray-50 dark:bg-gray-800 rounded-lg" },
-          React.createElement(Spinner, null),
-          React.createElement('p', { className: "mt-4 text-gray-600 dark:text-gray-300 font-medium animate-pulse" }, statusMessage)
-        );
-      };
-
-      const Header = ({ onRefresh, isLoading }) => (
-        React.createElement('header', { className: "flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700" },
-          React.createElement('div', { className: "flex items-center gap-3" },
-            React.createElement(TrainIcon, { className: "w-8 h-8 text-indigo-600 dark:text-indigo-400" }),
-            React.createElement('h1', { className: "text-3xl font-bold text-gray-800 dark:text-gray-100" }, "Gemini Train Times")
-          ),
-          React.createElement('button', { onClick: onRefresh, disabled: isLoading, className: "flex items-center gap-2 px-4 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all" },
-            React.createElement(RefreshIcon, { className: `w-5 h-5 ${isLoading ? 'animate-spin' : ''}` }),
-            "Refresh"
-          )
-        )
-      );
-
-      const StationSelector = ({ selectedStation, onStationChange, disabled }) => {
-        const handleChange = (event) => {
-          const selectedCode = event.target.value;
-          const station = GREAT_NORTHERN_STATIONS.find(s => s.code === selectedCode);
-          if (station) {
-            onStationChange(station);
-          }
-        };
-        return React.createElement('div', { className: "my-6" },
-          React.createElement('label', { htmlFor: "station-select", className: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" }, "Select Departure Station"),
-          React.createElement('select', { id: "station-select", value: selectedStation.code, onChange: handleChange, disabled: disabled, className: "block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:opacity-70 disabled:bg-gray-200 dark:disabled:bg-gray-700" },
-            GREAT_NORTHERN_STATIONS.map(station => React.createElement('option', { key: station.code, value: station.code }, station.name))
-          )
-        );
-      };
-
-      const ResultsDisplay = ({ services, station, directionsUrl, onGetDirections }) => (
-        React.createElement('div', { className: "space-y-6 animate-fade-in" },
-          React.createElement('div', null,
-            React.createElement('h2', { className: "text-xl font-semibold text-gray-700 dark:text-gray-200" },
-              "Next departures from ",
-              React.createElement('span', { className: "text-indigo-600 dark:text-indigo-400" }, station.name)
-            ),
-            React.createElement('p', { className: "text-sm text-gray-500 dark:text-gray-400 mt-1" }, `Showing services that call at ${DESTINATION_STATION_NAME}.`)
-          ),
-          React.createElement('ul', { className: "divide-y divide-gray-200 dark:divide-gray-700 border-t border-b dark:border-gray-700" },
-            services.map((svc, index) =>
-              React.createElement('li', { key: `${svc.std}-${svc.destination}-${index}`, className: "flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" },
-                React.createElement('div', { className: "flex-1" },
-                  React.createElement('p', { className: "font-semibold text-gray-800 dark:text-gray-100" }, `${svc.std} to ${svc.destination}`),
-                  React.createElement('p', { className: "text-sm text-gray-500 dark:text-gray-400" }, `Calls at ${DESTINATION_STATION_NAME}`)
-                ),
-                React.createElement('div', { className: "text-right" },
-                  React.createElement('p', { className: `font-bold ${svc.etd.toLowerCase() === 'on time' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}` }, svc.etd),
-                  React.createElement('p', { className: "text-sm text-gray-500 dark:text-gray-400" }, `Platform ${svc.platform}`)
-                )
-              )
-            )
-          ),
-          React.createElement('div', { className: "mt-6 p-4 bg-gray-50 dark:bg-gray-800/90 rounded-lg flex items-center justify-between" },
-            React.createElement('div', { className: "flex-1" },
-              React.createElement('h3', { className: "font-semibold text-gray-700 dark:text-gray-200" }, "Need Directions?"),
-              React.createElement('p', { className: "text-sm text-gray-500 dark:text-gray-400" }, `Get walking directions to ${station.name}.`)
-            ),
-            !directionsUrl ?
-              React.createElement('button', { onClick: onGetDirections, className: "flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all dark:ring-offset-gray-900" },
-                React.createElement(MapPinIcon, { className: "w-5 h-5" }),
-                "Get Directions"
-              ) :
-              React.createElement('a', { href: directionsUrl, target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all dark:ring-offset-gray-900" },
-                React.createElement(MapPinIcon, { className: "w-5 h-5" }),
-                "Open Google Maps"
-              )
-          )
-        )
-      );
-
-      // --- Main App Component ---
-      const App = () => {
-        const [isLoading, setIsLoading] = useState(true);
-        const [statusMessage, setStatusMessage] = useState('Initializing...');
-        const [error, setError] = useState(null);
-        const [trains, setTrains] = useState([]);
-        const [selectedStation, setSelectedStation] = useState(
-          GREAT_NORTHERN_STATIONS.find(s => s.code === 'FPK') || GREAT_NORTHERN_STATIONS[0]
-        );
-        const [directionsUrl, setDirectionsUrl] = useState(null);
-
-        const findAndFetchTrains = useCallback(async (station) => {
-          setIsLoading(true);
-          setError(null);
-          setTrains([]);
-          setStatusMessage(`Checking for trains from ${station.name} to ${DESTINATION_STATION_NAME}…`);
-          try {
-            const services = await fetchTrainServices(station.name, DESTINATION_STATION_NAME);
-            if (services.length > 0) {
-              setTrains(services);
-              setStatusMessage(`Found trains from ${station.name}!`);
-            } else {
-              setError(`Sorry, no upcoming trains to ${DESTINATION_STATION_NAME} could be found from ${station.name}.`);
-            }
-          } catch (err) {
-            console.error(err);
-            let errorMessage = 'An unexpected error occurred while fetching train data.';
-            if (err instanceof Error) {
-              errorMessage = err.message;
-            }
-            setError(errorMessage);
-          } finally {
-            setIsLoading(false);
-          }
-        }, []);
-
-        useEffect(() => {
-          if (selectedStation) {
-            findAndFetchTrains(selectedStation);
-          }
-        }, [selectedStation, findAndFetchTrains]);
-
-        const handleRefresh = () => {
-          if (selectedStation) {
-            findAndFetchTrains(selectedStation);
-          }
-        };
-        
-        const handleStationChange = (station) => {
-          setSelectedStation(station);
-          setDirectionsUrl(null);
-        };
-
-        const handleGetDirections = () => {
-          if (!selectedStation) return;
-          setError(null);
-          setDirectionsUrl(null);
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const { latitude, longitude } = position.coords;
-                const url = buildWalkingLink(latitude, longitude, selectedStation.lat, selectedStation.lon);
-                setDirectionsUrl(url);
-              },
-              (geoError) => {
-                console.error("Geolocation error:", geoError);
-                setError("Could not get your location. Please ensure location services are enabled in your browser and for this site.");
-              }
-            );
-          } else {
-            setError("Geolocation is not supported by your browser.");
-          }
-        };
-
-        return React.createElement('div', { className: "bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-black min-h-screen font-sans" },
-          React.createElement('div', { className: "max-w-2xl mx-auto p-4 sm:p-6" },
-            React.createElement('main', { className: "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 sm:p-8 transition-all duration-300" },
-              React.createElement(Header, { onRefresh: handleRefresh, isLoading: isLoading }),
-              React.createElement(StationSelector, { selectedStation: selectedStation, onStationChange: handleStationChange, disabled: isLoading }),
-              React.createElement('div', { className: "mt-6" },
-                React.createElement(StatusDisplay, { statusMessage: statusMessage, isLoading: isLoading }),
-                React.createElement(ErrorDisplay, { error: error }),
-                !isLoading && trains.length > 0 && selectedStation && React.createElement(ResultsDisplay, {
-                  services: trains,
-                  station: selectedStation,
-                  directionsUrl: directionsUrl,
-                  onGetDirections: handleGetDirections,
-                })
-              )
-            ),
-            React.createElement('footer', { className: "text-center mt-6 text-xs text-gray-500 dark:text-gray-400" },
-              React.createElement('p', null, "Train data is generated by Google Gemini and may not be accurate. For real-time information, please check with official sources.")
-            )
-          )
-        );
-      };
-
-      // --- Mount Application ---
-      const rootElement = document.getElementById('root');
-      if (!rootElement) {
-        throw new Error("Could not find root element to mount to");
-      }
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(
-        React.createElement(React.StrictMode, null, React.createElement(App, null))
-      );
-    </script>
-  </body>
+</body>
 </html>
