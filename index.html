@@ -224,8 +224,11 @@
                             station.lat, station.lon
                         );
                         
+                        // Create Google Maps walking directions link
+                        const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lon}&destination=${station.lat},${station.lon}&travelmode=walking`;
+                        
                         if (walkingMins !== null) {
-                            walkingTimeEl.textContent = `🚶 ${walkingMins} min walk to ${station.name}`;
+                            walkingTimeEl.innerHTML = `🚶 <a href="${mapsUrl}" target="_blank" class="underline hover:text-indigo-800">${walkingMins} min walk to ${station.name}</a>`;
                             walkingTimeEl.classList.remove('hidden');
                         }
                         
