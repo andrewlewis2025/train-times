@@ -82,8 +82,9 @@
         let currentMode = 'out';
         let userLocation = null;
         
-        // Great Northern stations SOUTH of Palmers Green (stations you'd travel from when going home)
+        // All Great Northern stations on the line through Palmers Green
         const GREAT_NORTHERN_STATIONS = [
+            // South of Palmers Green (northbound to PAL)
             { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
             { code: 'OLD', name: 'Old Street', lat: 51.5263, lon: -0.0877 },
             { code: 'EXR', name: 'Essex Road', lat: 51.5394, lon: -0.1042 },
@@ -93,7 +94,14 @@
             { code: 'HRY', name: 'Harringay', lat: 51.5818, lon: -0.1094 },
             { code: 'HPY', name: 'Hornsey', lat: 51.5875, lon: -0.1169 },
             { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
-            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 }
+            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
+            // North of Palmers Green (southbound to PAL)
+            { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
+            { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 },
+            { code: 'ENF', name: 'Enfield Chase', lat: 51.6527, lon: -0.1047 },
+            { code: 'GNT', name: 'Gordon Hill', lat: 51.6781, lon: -0.0852 },
+            { code: 'CWN', name: 'Crews Hill', lat: 51.6945, lon: -0.0797 },
+            { code: 'CHN', name: 'Cuffley', lat: 51.7086, lon: -0.1021 }
         ];
 
         const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
