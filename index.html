@@ -1,514 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Time-Travel Photo Generator</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-J8grk3ZobATNPF/MuauLZLitGcMjzJBspOob8VZ8Um4yWXfvJ2w1VjiWIsox3XL1dGvVtPo0KuPiwRANrUBeSw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <style>
-    .mask-canvas {
-      touch-action: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Train Times">
+    <title>Train Times - Palmers Green</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media (display-mode: standalone) {
+            body { padding-top: env(safe-area-inset-top); }
+        }
+    </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-slate-100">
-  <div class="max-w-6xl mx-auto px-4 py-10 space-y-8">
-    <header class="bg-white/10 backdrop-blur rounded-3xl p-8 shadow-2xl border border-white/10">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div>
-          <p class="text-sm uppercase tracking-[0.4em] text-sky-300 mb-2">Prototype</p>
-          <h1 class="text-3xl md:text-4xl font-bold text-white leading-snug">
-            Time-Travel Photo Generator
-          </h1>
-          <p class="mt-3 text-slate-200 max-w-2xl">
-            Upload one portrait, lock in the face and body, and generate five faithful looks from the 1960s through the 2000s.
-            Google AI Studio applies localised edits only where you allow.
-          </p>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="max-w-2xl mx-auto p-4">
+        <!-- Header with Mode Toggle -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-800">Palmers Green Train Times</h1>
+                </div>
+                <button onclick="fetchTrains()" id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <svg id="refreshIcon" class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Mode Toggle Buttons -->
+            <div class="flex gap-2 mb-4">
+                <button onclick="setMode('out')" id="outBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md">
+                    OUT
+                </button>
+                <button onclick="setMode('home')" id="homeBtn" class="flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+                    HOME
+                </button>
+            </div>
+
+            <!-- HOME mode station selector -->
+            <div id="homeStationSelector" class="mb-3 hidden">
+                <label for="homeStationSelect" class="block text-sm font-medium text-gray-700 mb-1">
+                    Departing from
+                </label>
+                <select
+                    id="homeStationSelect"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                >
+                    <!-- Populated by JavaScript -->
+                </select>
+            </div>
+            
+            <div class="text-sm text-gray-600 mb-3">
+                <div id="routeInfo" class="font-semibold">Palmers Green → Moorgate</div>
+                <div id="walkingTime" class="text-xs text-indigo-600 font-medium mt-1 hidden"></div>
+                <div class="flex items-center gap-2 mt-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span id="lastUpdate">Loading...</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-indigo-600 rounded">
+                    <span class="text-sm text-gray-700">Auto-refresh</span>
+                </label>
+                
+                <button onclick="requestNotifications()" id="notifyBtn" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                    🔔 Enable alerts
+                </button>
+            </div>
         </div>
-        <a href="#workspace" class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold rounded-full bg-sky-400 text-slate-900 shadow-lg hover:bg-sky-300 transition" id="ctaButton">
-          Try it for free
-        </a>
-      </div>
-    </header>
 
-    <main id="workspace" class="space-y-8">
-      <section class="grid lg:grid-cols-2 gap-6">
-        <div class="bg-white/10 backdrop-blur rounded-3xl p-6 space-y-5 border border-white/10">
-          <h2 class="text-xl font-semibold text-white">1. Upload portrait</h2>
-          <label class="block border border-dashed border-sky-300/60 rounded-2xl p-6 text-center cursor-pointer hover:border-sky-200 transition">
-            <input type="file" accept="image/*" class="hidden" id="imageInput" />
-            <div class="space-y-3">
-              <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sky-400/20">
-                <svg class="w-8 h-8 text-sky-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-lg">Drop or browse your portrait</p>
-                <p class="text-sm text-slate-300">JPG or PNG · Keep the subject centred for best results</p>
-              </div>
+        <!-- Status Message -->
+        <div id="statusMessage" class="mb-4 hidden"></div>
+
+        <!-- Train List -->
+        <div id="trainList" class="space-y-3">
+            <div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
+                Click refresh to load train times
             </div>
-          </label>
-          <div class="rounded-2xl overflow-hidden border border-white/10 bg-slate-950/30" id="imagePreviewWrapper">
-            <div class="aspect-square flex items-center justify-center text-slate-500" id="imagePlaceholder">
-              Portrait preview appears here
-            </div>
-            <img id="imagePreview" alt="Uploaded portrait preview" class="hidden w-full" />
-          </div>
-          <div class="space-y-3 text-sm text-slate-300">
-            <div class="flex items-center gap-2">
-              <span class="inline-flex h-4 w-4 rounded-full bg-black border border-white/40"></span>
-              <span>Black mask = locked pixels (face &amp; body stay untouched)</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="inline-flex h-4 w-4 rounded-full bg-white border border-white/40"></span>
-              <span>White mask = editable regions (hair, clothing, background)</span>
-            </div>
-          </div>
         </div>
+    </div>
 
-        <div class="bg-white/10 backdrop-blur rounded-3xl p-6 space-y-5 border border-white/10">
-          <div class="flex items-center justify-between flex-wrap gap-3">
-            <h2 class="text-xl font-semibold text-white">2. Paint the edit mask</h2>
-            <div class="flex items-center gap-2">
-              <button id="autoMaskBtn" class="text-sm font-medium text-sky-300 hover:text-sky-100 transition">Lock face &amp; body</button>
-              <button id="fillWhiteBtn" class="text-sm font-medium text-sky-300 hover:text-sky-100 transition">Edit hair/clothes/bg</button>
-            </div>
-          </div>
-          <div class="relative bg-slate-950/60 border border-white/10 rounded-2xl overflow-hidden">
-            <div class="absolute inset-3 text-sm text-slate-400 flex items-center justify-center pointer-events-none" id="maskHint">
-              Upload an image to unlock the canvas
-            </div>
-            <div class="relative" id="canvasContainer">
-              <img id="maskImage" alt="Mask background" class="w-full hidden select-none pointer-events-none" />
-              <canvas id="maskCanvas" class="mask-canvas absolute inset-0 w-full h-full hidden" width="512" height="512"></canvas>
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
-              <button class="px-3 py-1 rounded-full text-sm font-medium bg-white text-slate-900" data-brush="white">Brush: Edit</button>
-              <button class="px-3 py-1 rounded-full text-sm font-medium" data-brush="black">Brush: Lock</button>
-            </div>
-            <div class="flex items-center gap-2 text-sm text-slate-200">
-              <span>Size</span>
-              <input type="range" min="8" max="80" value="30" id="brushSize" class="accent-sky-300" />
-            </div>
-            <button id="clearMaskBtn" class="text-sm font-medium text-sky-300 hover:text-sky-100 transition">Clear mask</button>
-          </div>
-          <p class="text-xs text-slate-400">Tip: start with the preset, then refine edges using the brush or lock tool.</p>
-        </div>
-      </section>
+    <script>
+        let autoRefreshInterval;
+        let currentMode = 'out';
+        let userLocation = null;
 
-      <section class="bg-white/10 backdrop-blur rounded-3xl p-6 space-y-4 border border-white/10">
-        <h2 class="text-xl font-semibold text-white">3. Connect Google AI Studio &amp; generate</h2>
-        <div class="grid md:grid-cols-2 gap-4">
-          <label class="flex flex-col gap-2">
-            <span class="text-sm text-slate-200">Google AI Studio API key</span>
-            <input id="apiKeyInput" type="password" placeholder="AIza..." class="px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400" />
-          </label>
-          <label class="flex flex-col gap-2">
-            <span class="text-sm text-slate-200">Seed (optional)</span>
-            <input id="seedInput" type="number" min="0" placeholder="Leave blank for random" class="px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400" />
-          </label>
-        </div>
-        <div class="flex flex-wrap items-center gap-4">
-          <button id="generateBtn" class="px-6 py-3 rounded-full bg-sky-400 text-slate-900 text-lg font-semibold shadow-lg hover:bg-sky-300 transition disabled:opacity-40 disabled:cursor-not-allowed">
-            Generate 5 looks
-          </button>
-          <div id="progressWrapper" class="hidden flex-1">
-            <div class="w-full bg-white/10 rounded-full overflow-hidden h-2">
-              <div id="progressBar" class="h-full bg-sky-400 transition-all duration-300" style="width: 0%;"></div>
-            </div>
-            <p id="progressText" class="mt-2 text-sm text-slate-200"></p>
-          </div>
-        </div>
-        <div class="text-sm text-slate-300 leading-relaxed">
-          <p class="font-semibold text-sky-200 mb-2">Prompt template</p>
-          <pre class="whitespace-pre-wrap bg-slate-950/50 border border-white/10 rounded-2xl p-4 text-xs text-slate-200 overflow-x-auto"><code>You are an image editing model. Apply only localised edits inside the white mask. Do not modify any black-masked pixel values.
-The person’s face identity, facial geometry, skin tone, and body proportions must remain exactly the same.
-Keep pose, camera angle, and framing unchanged.
+        let lastTrainServices = [];
+        let trackedServiceID = null;
+        let trackedServiceStatus = null;
+        
+        // Great Northern stations on the line to Palmers Green (southbound stations)
+        const GREAT_NORTHERN_STATIONS = [
+            { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
+            { code: 'OLD', name: 'Old Street', lat: 51.5263, lon: -0.0877 },
+            { code: 'EXR', name: 'Essex Road', lat: 51.5394, lon: -0.1042 },
+            { code: 'HBY', name: 'Highbury & Islington', lat: 51.5461, lon: -0.1038 },
+            { code: 'DRN', name: 'Drayton Park', lat: 51.5531, lon: -0.1117 },
+            { code: 'FPK', name: 'Finsbury Park', lat: 51.5642, lon: -0.1065 },
+            { code: 'HRY', name: 'Harringay', lat: 51.5818, lon: -0.1094 },
+            { code: 'HPY', name: 'Hornsey', lat: 51.5875, lon: -0.1169 },
+            { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
+            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
+            { code: 'ARN', name: 'Arnos Grove', lat: 51.6163, lon: -0.1334 },
+            { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
+            { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 },
+            { code: 'ENF', name: 'Enfield Chase', lat: 51.6527, lon: -0.1047 },
+            { code: 'GNT', name: 'Gordon Hill', lat: 51.6781, lon: -0.0852 },
+            { code: 'CWN', name: 'Crews Hill', lat: 51.6945, lon: -0.0797 },
+            { code: 'CHN', name: 'Cuffley', lat: 51.7086, lon: -0.1021 }
+        ];
 
-Transform only the HAIR, CLOTHING, and BACKGROUND to match this decade style: &lt;DECADE_STYLE&gt;.
-Requirements:
-- Preserve the exact face identity and facial features (eyes, nose, mouth, jawline), skin texture, and body silhouette.
-- Do not change age, ethnicity, head size, or body shape.
-- Do not alter pose or camera perspective.
-- Respect the mask: edit only white regions; leave black regions untouched.
-- Avoid artifacts, warping, extra fingers/limbs, or distortions.
+        const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
+        const MOORGATE = { code: 'MOG', name: 'Moorgate' };
 
-Negative prompt: face morph, identity change, age change, different person, different ethnicity, pose change, body shape change, body morph, distortion, extra limbs, extra fingers, deformed face, warped head, different head size</code></pre>
-        </div>
-      </section>
+        function setMode(mode) {
+            currentMode = mode;
+            const outBtn = document.getElementById('outBtn');
+            const homeBtn = document.getElementById('homeBtn');
+            const homeSelector = document.getElementById('homeStationSelector');
 
-      <section class="bg-white/10 backdrop-blur rounded-3xl p-6 space-y-4 border border-white/10">
-        <div class="flex items-center justify-between flex-wrap gap-4">
-          <h2 class="text-xl font-semibold text-white">4. Results gallery</h2>
-          <button id="downloadAllBtn" class="px-4 py-2 rounded-full border border-sky-400 text-sky-300 hover:bg-sky-400 hover:text-slate-900 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Download all</button>
-        </div>
-        <div id="gallery" class="grid md:grid-cols-3 lg:grid-cols-5 gap-4"></div>
-      </section>
-
-      <section class="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 text-sm text-slate-200">
-        <h2 class="text-lg font-semibold text-sky-200">How it works</h2>
-        <ol class="list-decimal list-inside space-y-2 text-slate-300">
-          <li>Upload a single portrait at native resolution. The app mirrors your photo in the mask canvas.</li>
-          <li>Use the auto-lock preset to protect the face and torso, then refine editable regions with the brush tools.</li>
-          <li>Paste your Google AI Studio API key. The generator runs five parallel image edits with conservative parameters.</li>
-          <li>Each decade preset updates hair, clothing, and background while preserving identity, pose, and proportions.</li>
-          <li>Download all five looks as a ZIP directly in your browser when you are satisfied.</li>
-        </ol>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const decadeStyles = {
-      '1960s': '1960s film photograph, medium grain, soft contrast, pastel palette, studio portrait lighting, period-accurate wardrobe and hairstyle',
-      '1970s': '1970s analog look, warm cast, muted saturation, subtle halation, period-accurate wardrobe and hairstyle',
-      '1980s': '1980s glossy magazine aesthetic, punchy colours, neon accents, on-camera flash look, period-accurate wardrobe and hairstyle',
-      '1990s': '1990s 35mm compact camera vibe, mild flash, slight green-magenta cast, early streetwear styling, period-accurate hair',
-      '2000s': 'early digital camera look, slight sensor noise, cooler white balance, denim-and-tee fashion, period-accurate hair'
-    };
-
-    const NEGATIVE_PROMPT = 'face morph, identity change, age change, different person, different ethnicity, pose change, body shape change, body morph, distortion, extra limbs, extra fingers, deformed face, warped head, different head size';
-    const GOOGLE_IMAGE_EDIT_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/imagegeneration:edit';
-
-    const imageInput = document.getElementById('imageInput');
-    const imagePreview = document.getElementById('imagePreview');
-    const imagePlaceholder = document.getElementById('imagePlaceholder');
-    const maskCanvas = document.getElementById('maskCanvas');
-    const maskImage = document.getElementById('maskImage');
-    const maskHint = document.getElementById('maskHint');
-    const brushButtons = document.querySelectorAll('[data-brush]');
-    const brushSizeInput = document.getElementById('brushSize');
-    const clearMaskBtn = document.getElementById('clearMaskBtn');
-    const autoMaskBtn = document.getElementById('autoMaskBtn');
-    const fillWhiteBtn = document.getElementById('fillWhiteBtn');
-    const generateBtn = document.getElementById('generateBtn');
-    const progressWrapper = document.getElementById('progressWrapper');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const gallery = document.getElementById('gallery');
-    const downloadAllBtn = document.getElementById('downloadAllBtn');
-    const apiKeyInput = document.getElementById('apiKeyInput');
-    const seedInput = document.getElementById('seedInput');
-
-    let uploadedImageData = null;
-    let uploadedImageMime = null;
-    let brushColor = 'white';
-    let drawing = false;
-    let lastPoint = null;
-    let generatedResults = [];
-
-    const maskCtx = maskCanvas.getContext('2d');
-
-    function setBrush(color) {
-      brushColor = color;
-      brushButtons.forEach(btn => {
-        if (btn.dataset.brush === color) {
-          btn.classList.add('bg-white', 'text-slate-900');
-        } else {
-          btn.classList.remove('bg-white', 'text-slate-900');
+            if (mode === 'out') {
+                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
+                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
+                homeSelector.classList.add('hidden');
+                document.getElementById('routeInfo').textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
+            } else {
+                homeBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-indigo-600 text-white shadow-md';
+                outBtn.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300';
+                homeSelector.classList.remove('hidden');
+            }
+            
+            fetchTrains();
         }
-      });
-    }
 
-    function initializeGallery() {
-      gallery.innerHTML = '';
-      Object.keys(decadeStyles).forEach(decade => {
-        const slot = document.createElement('div');
-        slot.className = 'flex flex-col gap-2 bg-slate-950/50 border border-white/10 rounded-2xl p-3';
-        slot.innerHTML = `
-          <div class="aspect-square rounded-xl bg-slate-900/70 border border-white/5 flex items-center justify-center overflow-hidden relative">
-            <div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm" data-placeholder>${decade} preview</div>
-            <img data-image class="hidden w-full h-full object-cover" alt="${decade} result" />
-          </div>
-          <div class="text-center">
-            <p class="font-semibold text-slate-100">${decade}</p>
-            <p class="text-xs text-slate-400">${decadeStyles[decade]}</p>
-          </div>`;
-        gallery.appendChild(slot);
-      });
-    }
-
-    function resizeCanvasToImage(img) {
-      const width = img.naturalWidth;
-      const height = img.naturalHeight;
-      maskCanvas.width = width;
-      maskCanvas.height = height;
-      maskCanvas.style.width = '100%';
-      maskCanvas.style.height = 'auto';
-      maskImage.src = img.src;
-      maskImage.classList.remove('hidden');
-      maskCanvas.classList.remove('hidden');
-      maskHint.classList.add('hidden');
-      maskCtx.fillStyle = 'white';
-      maskCtx.fillRect(0, 0, width, height);
-    }
-
-    function resetMask() {
-      if (!uploadedImageData) return;
-      maskCtx.fillStyle = 'white';
-      maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
-    }
-
-    function applyAutoMask() {
-      if (!uploadedImageData) return;
-      resetMask();
-      const w = maskCanvas.width;
-      const h = maskCanvas.height;
-      maskCtx.fillStyle = 'black';
-      maskCtx.save();
-      const faceCx = w / 2;
-      const faceCy = h / 3;
-      maskCtx.translate(faceCx, faceCy);
-      maskCtx.scale(w / 10, h / 8);
-      maskCtx.beginPath();
-      maskCtx.ellipse(0, 0, 1, 1, 0, 0, Math.PI * 2);
-      maskCtx.fill();
-      maskCtx.restore();
-      maskCtx.fillRect(w * 0.35, h * 0.38, w * 0.30, h * 0.35);
-    }
-
-    function handleImageUpload(event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
-      uploadedImageMime = file.type || 'image/png';
-      const reader = new FileReader();
-      reader.onload = e => {
-        uploadedImageData = e.target.result;
-        imagePreview.src = uploadedImageData;
-        imagePreview.classList.remove('hidden');
-        imagePlaceholder.classList.add('hidden');
-        maskImage.src = uploadedImageData;
-        maskImage.onload = () => {
-          resizeCanvasToImage(maskImage);
-          applyAutoMask();
-        };
-        generateBtn.disabled = false;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function getCanvasPoint(event) {
-      const rect = maskCanvas.getBoundingClientRect();
-      const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-      const clientY = event.touches ? event.touches[0].clientY : event.clientY;
-      return {
-        x: ((clientX - rect.left) / rect.width) * maskCanvas.width,
-        y: ((clientY - rect.top) / rect.height) * maskCanvas.height
-      };
-    }
-
-    function startDrawing(event) {
-      if (!uploadedImageData) return;
-      drawing = true;
-      lastPoint = getCanvasPoint(event);
-      drawLine(lastPoint, lastPoint);
-    }
-
-    function draw(event) {
-      if (!drawing) return;
-      const point = getCanvasPoint(event);
-      drawLine(lastPoint, point);
-      lastPoint = point;
-    }
-
-    function stopDrawing() {
-      drawing = false;
-      lastPoint = null;
-    }
-
-    function drawLine(from, to) {
-      maskCtx.globalCompositeOperation = 'source-over';
-      maskCtx.strokeStyle = brushColor;
-      maskCtx.lineWidth = parseInt(brushSizeInput.value, 10);
-      maskCtx.lineCap = 'round';
-      maskCtx.lineJoin = 'round';
-      maskCtx.beginPath();
-      maskCtx.moveTo(from.x, from.y);
-      maskCtx.lineTo(to.x, to.y);
-      maskCtx.stroke();
-    }
-
-    function setLoading(state) {
-      generateBtn.disabled = state;
-      progressWrapper.classList.toggle('hidden', !state);
-      if (!state) {
-        progressBar.style.width = '0%';
-        progressText.textContent = '';
-      }
-    }
-
-    function updateProgress(completed, total, label) {
-      const percent = Math.round((completed / total) * 100);
-      progressBar.style.width = `${percent}%`;
-      progressText.textContent = `Processing ${label} (${completed}/${total})`;
-    }
-
-    async function callImageEdit(decade, base64Image, base64Mask, apiKey, seed) {
-      const prompt = `Transform only the HAIR, CLOTHING, and BACKGROUND to match this decade style: ${decadeStyles[decade]}\n\nRequirements:\n- Preserve the exact face identity and facial features (eyes, nose, mouth, jawline), skin texture, and body silhouette.\n- Do not change age, ethnicity, head size, or body shape.\n- Do not alter pose or camera perspective.\n- Respect the mask: edit only white regions; leave black regions untouched.\n- Avoid artifacts, warping, extra fingers/limbs, or distortions.`;
-
-      const requestBody = {
-        systemInstruction: 'You are an image editing model. Apply only localised edits inside the white mask. Do not modify any black-masked pixel values. The person\'s face identity, facial geometry, skin tone, and body proportions must remain exactly the same. Keep pose, camera angle, and framing unchanged.',
-        prompt,
-        negativePrompt: NEGATIVE_PROMPT,
-        image: {
-          mimeType: uploadedImageMime || 'image/png',
-          data: base64Image
-        },
-        mask: {
-          mimeType: 'image/png',
-          data: base64Mask
-        },
-        parameters: {
-          variationLevel: 'low',
-          editStrength: 'low',
-          output: {
-            mimeType: 'image/png',
-            size: { width: 1024, height: 1024 }
-          },
-          seed: seed ?? undefined
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
-      };
 
-      const response = await fetch(`${GOOGLE_IMAGE_EDIT_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API error ${response.status}: ${errorText}`);
-      }
-
-      const result = await response.json();
-      const imageData = result?.image?.data || result?.images?.[0]?.data || result?.candidates?.[0]?.image?.data;
-      if (!imageData) {
-        console.warn('Unexpected response payload', result);
-        throw new Error('Image data missing from response');
-      }
-      return `data:image/png;base64,${imageData}`;
-    }
-
-    async function generateImages() {
-      if (!uploadedImageData) {
-        alert('Upload a portrait before generating.');
-        return;
-      }
-      const apiKey = apiKeyInput.value.trim();
-      if (!apiKey) {
-        alert('Add your Google AI Studio API key.');
-        return;
-      }
-
-      setLoading(true);
-      downloadAllBtn.disabled = true;
-      generatedResults = [];
-      initializeGallery();
-
-      const base64Image = uploadedImageData.split(',')[1];
-      const base64Mask = maskCanvas.toDataURL('image/png').split(',')[1];
-      const seed = seedInput.value === '' ? undefined : Number(seedInput.value);
-
-      const decades = Object.keys(decadeStyles);
-      let completed = 0;
-      const tasks = decades.map(async decade => {
-        try {
-          updateProgress(completed, decades.length, decade);
-          const imageUrl = await callImageEdit(decade, base64Image, base64Mask, apiKey, seed);
-          completed += 1;
-          updateProgress(completed, decades.length, decade);
-          renderGallerySlot(decade, imageUrl);
-          generatedResults.push({ decade, imageUrl });
-        } catch (error) {
-          completed += 1;
-          updateProgress(completed, decades.length, decade);
-          renderGalleryError(decade, error.message);
-          console.error('Failed to generate for', decade, error);
+        async function getWalkingTime(fromLat, fromLon, toLat, toLon) {
+            try {
+                // Estimate walking time: ~5km/h = ~80m/min
+                const distance = calculateDistance(fromLat, fromLon, toLat, toLon);
+                const walkingMinutes = Math.round((distance * 1000) / 80);
+                return walkingMinutes;
+            } catch (error) {
+                console.error('Error calculating walking time:', error);
+                return null;
+            }
         }
-      });
 
-      await Promise.allSettled(tasks);
-      setLoading(false);
-      if (generatedResults.length > 0) {
-        downloadAllBtn.disabled = false;
-      }
-    }
+        async function getUserLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation not supported'));
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        reject(error);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+                );
+            });
+        }
 
-    function renderGallerySlot(decade, imageUrl) {
-      const slot = Array.from(gallery.children).find(child => child.querySelector('p.font-semibold').textContent === decade);
-      if (!slot) return;
-      const placeholder = slot.querySelector('[data-placeholder]');
-      const img = slot.querySelector('[data-image]');
-      placeholder.classList.add('hidden');
-      img.src = imageUrl;
-      img.classList.remove('hidden');
-    }
+        function getServiceStatus(service) {
+            if (!service) return null;
 
-    function renderGalleryError(decade, message) {
-      const slot = Array.from(gallery.children).find(child => child.querySelector('p.font-semibold').textContent === decade);
-      if (!slot) return;
-      const placeholder = slot.querySelector('[data-placeholder]');
-      const img = slot.querySelector('[data-image]');
-      img.classList.add('hidden');
-      placeholder.classList.remove('hidden');
-      placeholder.textContent = `Error: ${message}`;
-    }
+            if (service.isCancelled) return 'cancelled';
 
-    async function downloadAll() {
-      if (!generatedResults.length) return;
-      const zip = new JSZip();
-      const folder = zip.folder('time-travel');
-      for (const result of generatedResults) {
-        const response = await fetch(result.imageUrl);
-        const blob = await response.blob();
-        const arrayBuffer = await blob.arrayBuffer();
-        folder.file(`${result.decade}.png`, arrayBuffer);
-      }
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'time-travel.zip';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
+            const scheduled = service.std || service.sta;
+            const expected = service.etd || service.eta;
 
-    imageInput.addEventListener('change', handleImageUpload);
+            if (expected && expected !== scheduled && expected !== 'On time') {
+                return 'delayed';
+            }
 
-    maskCanvas.addEventListener('mousedown', startDrawing);
-    maskCanvas.addEventListener('mousemove', draw);
-    window.addEventListener('mouseup', stopDrawing);
+            return 'onTime';
+        }
 
-    maskCanvas.addEventListener('touchstart', event => {
-      startDrawing(event);
-      event.preventDefault();
-    }, { passive: false });
-    maskCanvas.addEventListener('touchmove', event => {
-      draw(event);
-      event.preventDefault();
-    }, { passive: false });
-    maskCanvas.addEventListener('touchend', stopDrawing);
+        async function fetchTrains() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            const trainList = document.getElementById('trainList');
+            const statusMessage = document.getElementById('statusMessage');
+            const routeInfo = document.getElementById('routeInfo');
+            const walkingTimeEl = document.getElementById('walkingTime');
+            
+            refreshIcon.classList.add('animate-spin');
+            statusMessage.classList.add('hidden');
+            walkingTimeEl.classList.add('hidden');
+            walkingTimeEl.innerHTML = '';
 
-    brushButtons.forEach(btn => {
-      btn.addEventListener('click', () => setBrush(btn.dataset.brush));
-    });
+            try {
+                let fromStation, toStation;
+                let url;
+                
+                if (currentMode === 'out') {
+                    fromStation = PALMERS_GREEN.code;
+                    toStation = MOORGATE.code;
+                    routeInfo.textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
+                } else {
+                    const selectEl = document.getElementById('homeStationSelect');
+                    const selectedCode = selectEl.value || GREAT_NORTHERN_STATIONS[0].code;
+                    const station = GREAT_NORTHERN_STATIONS.find(s => s.code === selectedCode) || GREAT_NORTHERN_STATIONS[0];
 
-    clearMaskBtn.addEventListener('click', resetMask);
-    fillWhiteBtn.addEventListener('click', resetMask);
-    autoMaskBtn.addEventListener('click', applyAutoMask);
-    generateBtn.addEventListener('click', generateImages);
-    downloadAllBtn.addEventListener('click', downloadAll);
+                    fromStation = station.code;
+                    routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
 
-    initializeGallery();
-    setBrush('white');
-  </script>
+                    // Walking time and Google Maps link
+                    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lon}&travelmode=walking`;
+
+                    try {
+                        userLocation = await getUserLocation();
+                        const walkingMins = await getWalkingTime(
+                            userLocation.lat, userLocation.lon,
+                            station.lat, station.lon
+                        );
+
+                        if (walkingMins !== null) {
+                            walkingTimeEl.innerHTML = `🚶 ${walkingMins} min walk to ${station.name} · <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-indigo-700">Open in Google Maps</a>`;
+                        } else {
+                            walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-indigo-700">Walking directions to ${station.name} in Google Maps</a>`;
+                        }
+
+                        walkingTimeEl.classList.remove('hidden');
+                    } catch (locError) {
+                        // Location failed, still show link to station
+                        walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-indigo-700">Walking directions to ${station.name} in Google Maps</a>`;
+                        walkingTimeEl.classList.remove('hidden');
+                        console.warn('Could not get user location for walking time:', locError);
+                    }
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                
+                const data = await response.json();
+                let services = data.trainServices || [];
+
+                if (currentMode === 'home') {
+                    // Only show trains that call at Palmers Green
+                    services = services.filter(service => {
+                        const groups = service.subsequentCallingPoints || [];
+                        return groups.some(group =>
+                            group.callingPoint &&
+                            group.callingPoint.some(cp => cp.crs === PALMERS_GREEN.code)
+                        );
+                    });
+                }
+
+                lastTrainServices = services;
+
+                // Track status changes for the tracked service, if any
+                if (trackedServiceID && services.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
+                    const trackedService = services.find(s => (s.serviceID || s.serviceId) === trackedServiceID);
+                    if (trackedService) {
+                        const newStatus = getServiceStatus(trackedService);
+                        if (trackedServiceStatus && newStatus !== trackedServiceStatus) {
+                            let body = '';
+                            const scheduled = trackedService.std || trackedService.sta;
+                            const expected = trackedService.etd || trackedService.eta;
+
+                            if (newStatus === 'cancelled') {
+                                body = `Your tracked train at ${scheduled} has been cancelled.`;
+                            } else if (newStatus === 'delayed') {
+                                body = `Your tracked train at ${scheduled} is now delayed (expected ${expected}).`;
+                            } else if (newStatus === 'onTime') {
+                                body = `Your tracked train at ${scheduled} is now showing on time.`;
+                            }
+
+                            if (body) {
+                                new Notification('Train status update', {
+                                    body,
+                                    icon: '🚂'
+                                });
+                            }
+                        }
+                        trackedServiceStatus = getServiceStatus(trackedService);
+                    } else if (trackedServiceStatus) {
+                        // Service no longer listed
+                        new Notification('Train status update', {
+                            body: 'Your tracked train is no longer on the departures board. It may have departed.',
+                            icon: '🚂'
+                        });
+                        trackedServiceID = null;
+                        trackedServiceStatus = null;
+                    }
+                }
+
+                if (services.length > 0) {
+                    displayTrains(services.slice(0, 12));
+                    showStatus('success', 'Connected. Showing real-time trains from National Rail.');
+                } else {
+                    trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">No trains currently scheduled</div>';
+                    showStatus('warning', 'No trains found for this route.');
+                }
+                
+                document.getElementById('lastUpdate').textContent = 
+                    'Last updated: ' + new Date().toLocaleTimeString('en-GB');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('error', `Failed to fetch train times: ${error.message}`);
+                trainList.innerHTML = '<div class="bg-white rounded-lg shadow-md p-8 text-center text-red-500">Failed to load trains. Please try again.</div>';
+            } finally {
+                refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function displayTrains(trains) {
+            const trainList = document.getElementById('trainList');
+            trainList.innerHTML = trains.map(train => {
+                const scheduled = train.std || train.sta;
+                const expected = train.etd || train.eta;
+                const isCancelled = train.isCancelled;
+                const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
+                const serviceId = train.serviceID || train.serviceId || '';
+                const isTracked = serviceId && serviceId === trackedServiceID;
+
+                let status = 'On time';
+                let statusColor = 'text-green-600';
+                let statusBg = 'bg-green-50';
+                let borderColor = 'border-green-500';
+
+                if (isCancelled) {
+                    status = 'Cancelled';
+                    statusColor = 'text-red-800';
+                    statusBg = 'bg-red-100';
+                    borderColor = 'border-red-800';
+                } else if (isDelayed) {
+                    status = 'Delayed';
+                    statusColor = 'text-red-600';
+                    statusBg = 'bg-red-50';
+                    borderColor = 'border-red-500';
+                }
+
+                const trackedBadge = isTracked
+                    ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-100 text-xs font-medium text-indigo-700">Tracking</span>'
+                    : '';
+
+                const extraRing = isTracked ? ' ring-2 ring-indigo-500' : '';
+
+                return `
+                    <div
+                        class="bg-white rounded-lg shadow-md p-4 ${statusBg} border-l-4 ${borderColor} cursor-pointer hover:bg-indigo-50 transition-colors${extraRing}"
+                        onclick="trackTrain('${serviceId.replace(/'/g, "\\'")}')"
+                    >
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <div>
+                                    <div class="text-2xl font-bold text-gray-800">${scheduled || 'TBC'}</div>
+                                    ${expected && expected !== scheduled && !isCancelled ? 
+                                        `<div class="text-sm text-red-600 font-medium">Exp: ${expected}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="font-semibold text-right ${statusColor}">
+                                ${status}${trackedBadge}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                            <div><span class="font-medium">Platform:</span> ${train.platform || 'TBC'}</div>
+                            <div><span class="font-medium">Operator:</span> ${train.operator || 'Unknown'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function trackTrain(serviceId) {
+            if (!serviceId) {
+                showStatus('warning', 'Cannot track this service because it has no ID.');
+                return;
+            }
+
+            if (trackedServiceID === serviceId) {
+                trackedServiceID = null;
+                trackedServiceStatus = null;
+                showStatus('info', 'Stopped tracking this train.');
+            } else {
+                trackedServiceID = serviceId;
+                trackedServiceStatus = null;
+                showStatus('success', 'Now tracking this train for delays and cancellations.');
+            }
+
+            // Re-render to update highlighting
+            if (lastTrainServices && lastTrainServices.length > 0) {
+                displayTrains(lastTrainServices.slice(0, 12));
+            }
+        }
+
+        function showStatus(type, message) {
+            const statusMessage = document.getElementById('statusMessage');
+            const colors = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+            
+            statusMessage.className = `${colors[type]} border rounded-lg p-4 mb-4`;
+            statusMessage.innerHTML = `<div class="text-sm">${message}</div>`;
+            statusMessage.classList.remove('hidden');
+        }
+
+        function requestNotifications() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        document.getElementById('notifyBtn').style.display = 'none';
+                        showStatus('success', 'Notifications enabled. You will be alerted about your tracked train.');
+                    }
+                });
+            }
+        }
+
+        function populateHomeStations() {
+            const selectEl = document.getElementById('homeStationSelect');
+            if (!selectEl) return;
+
+            selectEl.innerHTML = '';
+            GREAT_NORTHERN_STATIONS.forEach(station => {
+                const opt = document.createElement('option');
+                opt.value = station.code;
+                opt.textContent = station.name;
+                // Default could be Finsbury Park
+                if (station.code === 'FPK') {
+                    opt.selected = true;
+                }
+                selectEl.appendChild(opt);
+            });
+        }
+
+        // Auto-refresh setup and initialisation
+        document.getElementById('autoRefresh').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                autoRefreshInterval = setInterval(fetchTrains, 60000);
+            } else {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+
+        // Station change should refresh HOME mode trains
+        document.addEventListener('DOMContentLoaded', () => {
+            populateHomeStations();
+            const homeSelect = document.getElementById('homeStationSelect');
+            if (homeSelect) {
+                homeSelect.addEventListener('change', () => {
+                    if (currentMode === 'home') {
+                        fetchTrains();
+                    }
+                });
+            }
+        });
+
+        // Hide notification button if already granted
+        if ('Notification' in window && Notification.permission === 'granted') {
+            document.getElementById('notifyBtn').style.display = 'none';
+        }
+
+        // Initial load
+        fetchTrains();
+        autoRefreshInterval = setInterval(fetchTrains, 60000);
+    </script>
 </body>
 </html>
