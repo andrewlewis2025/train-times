@@ -8,113 +8,229 @@
     <meta name="apple-mobile-web-app-title" content="Train Times">
     <title>Train Times - Palmers Green</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         @media (display-mode: standalone) {
             body { padding-top: env(safe-area-inset-top); }
         }
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.5); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes slide-in {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes train-move {
+            0% { transform: translateX(-100px) rotate(0deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100px) rotate(0deg); opacity: 0; }
+        }
+        
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        .animate-gradient {
+            background-size: 200% 200%;
+            animation: gradient-shift 8s ease infinite;
+        }
+        
+        .animate-slide-in {
+            animation: slide-in 0.5s ease-out;
+        }
+        
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            background-size: 1000px 100%;
+            animation: shimmer 3s infinite;
+        }
+        
+        .train-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .train-card:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+        
+        .bg-animated {
+            background: linear-gradient(-45deg, #581c87, #4c1d95, #312e81, #1e1b4b);
+            background-size: 400% 400%;
+            animation: gradient-shift 15s ease infinite;
+        }
+        
+        .glass-effect {
+            background: rgba(30, 27, 75, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-card {
+            background: rgba(20, 15, 45, 0.5);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-    <div class="max-w-2xl mx-auto p-4">
-        <!-- Header with Mode Toggle -->
-        <div class="bg-slate-900/80 border border-slate-700 rounded-2xl backdrop-blur p-6 mb-4 shadow-[0_18px_60px_rgba(0,0,0,0.45)]">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/40">
-                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+<body class="min-h-screen bg-animated text-slate-100 relative overflow-x-hidden">
+    <!-- Animated background elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+    </div>
+    <div class="max-w-4xl mx-auto p-4 sm:p-6 relative z-10">
+        <!-- Prominent Header Card -->
+        <div class="glass-effect rounded-3xl p-6 sm:p-8 mb-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden">
+            <div class="absolute inset-0 shimmer opacity-30"></div>
+            <div class="relative z-10">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-2xl bg-pink-500/20 border border-pink-500/40 animate-pulse-glow">
+                            <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-purple-300 mb-1 tracking-wide">TRAIN TIMES</p>
+                            <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">
+                                Palmers Green
+                            </h1>
+                            <p class="text-sm text-purple-200/80">
+                                Great Northern · Live departures
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onclick="fetchTrains()"
+                        id="refreshBtn"
+                        class="p-3 rounded-2xl border border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 transition-all hover:scale-105 hover:border-pink-500/50 backdrop-blur-sm"
+                        aria-label="Refresh trains"
+                    >
+                        <svg id="refreshIcon" class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-semibold tracking-tight text-slate-50">
-                            Palmers Green Train Times
-                        </h1>
-                        <p class="text-xs text-slate-400">
-                            Great Northern · Live departures
-                        </p>
-                    </div>
+                    </button>
                 </div>
-                <button
-                    onclick="fetchTrains()"
-                    id="refreshBtn"
-                    class="p-2 rounded-full border border-slate-700 bg-slate-900/60 hover:bg-slate-800 transition-colors"
-                    aria-label="Refresh trains"
-                >
-                    <svg id="refreshIcon" class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                </button>
-            </div>
 
-            <!-- Mode Toggle Buttons -->
-            <div class="flex gap-2 mb-4 bg-slate-900/80 border border-slate-800 rounded-xl p-1">
-                <button
-                    onclick="setMode('out')"
-                    id="outBtn"
-                    class="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40"
-                >
-                    OUT
-                </button>
-                <button
-                    onclick="setMode('home')"
-                    id="homeBtn"
-                    class="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all bg-transparent text-slate-300 hover:bg-slate-800/80"
-                >
-                    HOME
-                </button>
-            </div>
-
-            <!-- HOME mode station selector -->
-            <div id="homeStationSelector" class="mb-3 hidden">
-                <label for="homeStationSelect" class="block text-xs font-medium text-slate-400 mb-1">
-                    Departing from
-                </label>
-                <select
-                    id="homeStationSelect"
-                    class="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm bg-slate-900/80 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                    <!-- Populated by JavaScript -->
-                </select>
-            </div>
-            
-            <div class="text-xs text-slate-400 mb-3 space-y-1.5">
-                <div id="routeInfo" class="font-medium text-slate-100">
-                    Palmers Green → Moorgate
+                <!-- Mode Toggle Buttons -->
+                <div class="flex gap-2 mb-5 glass-card rounded-2xl p-1.5">
+                    <button
+                        onclick="setMode('out')"
+                        id="outBtn"
+                        class="flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60"
+                    >
+                        OUT
+                    </button>
+                    <button
+                        onclick="setMode('home')"
+                        id="homeBtn"
+                        class="flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5"
+                    >
+                        HOME
+                    </button>
                 </div>
-                <div id="walkingTime" class="text-[11px] text-emerald-300 font-medium mt-0.5 hidden"></div>
-                <div class="flex items-center gap-2 mt-0.5 text-[11px]">
-                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span id="lastUpdate">Loading...</span>
-                </div>
-            </div>
 
-            <div class="flex items-center gap-3 flex-wrap">
-                <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-                    <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-emerald-500 rounded border-slate-600 bg-slate-900">
-                    <span>Auto refresh every minute</span>
-                </label>
+                <!-- HOME mode station selector -->
+                <div id="homeStationSelector" class="mb-4 hidden">
+                    <label for="homeStationSelect" class="block text-xs font-semibold text-purple-300 mb-2 uppercase tracking-wide">
+                        Departing from
+                    </label>
+                    <select
+                        id="homeStationSelect"
+                        class="w-full border border-purple-500/30 rounded-xl px-4 py-3 text-sm glass-card text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500/50 transition-all"
+                    >
+                        <!-- Populated by JavaScript -->
+                    </select>
+                </div>
                 
-                <button
-                    onclick="requestNotifications()"
-                    id="notifyBtn"
-                    class="ml-auto text-xs text-emerald-300 hover:text-emerald-200 font-medium flex items-center gap-1"
-                >
-                    <span>🔔</span>
-                    <span>Enable alerts</span>
-                </button>
+                <div class="text-sm mb-4 space-y-2">
+                    <div id="routeInfo" class="font-bold text-lg text-white">
+                        Palmers Green → Moorgate
+                    </div>
+                    <div id="walkingTime" class="text-xs text-pink-300 font-medium hidden"></div>
+                    <div class="flex items-center gap-2 text-xs text-purple-300/70">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span id="lastUpdate">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 flex-wrap pt-2 border-t border-purple-500/20">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-purple-200">
+                        <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-pink-500 rounded border-purple-500/30 bg-purple-900/30 focus:ring-pink-500 focus:ring-2">
+                        <span>Auto refresh every minute</span>
+                    </label>
+                    
+                    <button
+                        onclick="requestNotifications()"
+                        id="notifyBtn"
+                        class="ml-auto text-xs text-pink-400 hover:text-pink-300 font-semibold flex items-center gap-2 transition-colors"
+                    >
+                        <span>🔔</span>
+                        <span>Enable alerts</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Status Message -->
-        <div id="statusMessage" class="mb-4 hidden"></div>
+        <div id="statusMessage" class="mb-5 hidden"></div>
 
         <!-- Train List -->
-        <div id="trainList" class="space-y-3">
-            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
-                Click refresh to load train times
+        <div id="trainList" class="space-y-4">
+            <div class="glass-card rounded-3xl p-12 text-center text-purple-300/60 border-dashed border-2 border-purple-500/20">
+                <div class="flex flex-col items-center gap-4">
+                    <div class="relative">
+                        <svg class="w-20 h-20 text-purple-500/40 animate-float" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <div class="absolute inset-0 bg-pink-500/20 rounded-full blur-xl animate-pulse-glow"></div>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold mb-1">Ready to load train times</p>
+                        <p class="text-xs text-purple-400/60">Click the refresh button above to get started</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -159,13 +275,13 @@
             const homeSelector = document.getElementById('homeStationSelector');
 
             if (mode === 'out') {
-                outBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40';
-                homeBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all bg-transparent text-slate-300 hover:bg-slate-800/80';
+                outBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60';
+                homeBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5';
                 homeSelector.classList.add('hidden');
                 document.getElementById('routeInfo').textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
             } else {
-                homeBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40';
-                outBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all bg-transparent text-slate-300 hover:bg-slate-800/80';
+                homeBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60';
+                outBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5';
                 homeSelector.classList.remove('hidden');
             }
             
@@ -271,14 +387,14 @@
                         );
 
                         if (walkingMins !== null) {
-                            walkingTimeEl.innerHTML = `🚶 ${walkingMins} min walk to ${station.name} · <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-emerald-300">Open in Google Maps</a>`;
+                            walkingTimeEl.innerHTML = `🚶 ${walkingMins} min walk to ${station.name} · <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Open in Google Maps</a>`;
                         } else {
-                            walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-emerald-300">Walking directions to ${station.name} in Google Maps</a>`;
+                            walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Walking directions to ${station.name} in Google Maps</a>`;
                         }
 
                         walkingTimeEl.classList.remove('hidden');
                     } catch (locError) {
-                        walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-emerald-300">Walking directions to ${station.name} in Google Maps</a>`;
+                        walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Walking directions to ${station.name} in Google Maps</a>`;
                         walkingTimeEl.classList.remove('hidden');
                         console.warn('Could not get user location for walking time:', locError);
                     }
@@ -341,7 +457,7 @@
                     displayTrains(services.slice(0, 12));
                     showStatus('success', 'Connected. Showing real time trains from National Rail.');
                 } else {
-                    trainList.innerHTML = '<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">No trains currently scheduled</div>';
+                    trainList.innerHTML = '<div class="glass-card rounded-3xl p-12 text-center text-purple-300/60 border-dashed border-2 border-purple-500/20"><p class="text-sm font-medium">No trains currently scheduled</p></div>';
                     showStatus('warning', 'No trains found for this route.');
                 }
                 
@@ -351,7 +467,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 showStatus('error', `Failed to fetch train times: ${error.message}`);
-                trainList.innerHTML = '<div class="bg-slate-900/70 border border-rose-800/60 rounded-2xl p-8 text-center text-rose-300">Failed to load trains. Please try again.</div>';
+                trainList.innerHTML = '<div class="glass-card rounded-3xl p-12 text-center text-red-300 border border-red-500/30"><p class="text-sm font-medium">Failed to load trains. Please try again.</p></div>';
             } finally {
                 refreshIcon.classList.remove('animate-spin');
             }
@@ -359,7 +475,7 @@
 
         function displayTrains(trains) {
             const trainList = document.getElementById('trainList');
-            trainList.innerHTML = trains.map(train => {
+            trainList.innerHTML = trains.map((train, index) => {
                 const scheduled = train.std || train.sta;
                 const expected = train.etd || train.eta;
                 const isCancelled = train.isCancelled;
@@ -368,48 +484,54 @@
                 const isTracked = serviceId && serviceId === trackedServiceID;
 
                 let status = 'On time';
-                let statusColor = 'text-emerald-300';
-                let statusBg = 'bg-slate-900/80';
-                let borderColor = 'border-emerald-500';
+                let statusColor = 'text-pink-300';
+                let borderColor = 'border-pink-500/50';
+                let bgGradient = 'from-pink-500/10 to-purple-500/10';
 
                 if (isCancelled) {
                     status = 'Cancelled';
-                    statusColor = 'text-rose-300';
-                    statusBg = 'bg-rose-900/20';
-                    borderColor = 'border-rose-500';
+                    statusColor = 'text-red-300';
+                    borderColor = 'border-red-500/50';
+                    bgGradient = 'from-red-500/10 to-rose-500/10';
                 } else if (isDelayed) {
                     status = 'Delayed';
                     statusColor = 'text-amber-300';
-                    statusBg = 'bg-amber-900/20';
-                    borderColor = 'border-amber-400';
+                    borderColor = 'border-amber-500/50';
+                    bgGradient = 'from-amber-500/10 to-yellow-500/10';
                 }
 
                 const trackedBadge = isTracked
-                    ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/15 text-[10px] font-medium text-emerald-300 border border-emerald-400/40">Tracking</span>'
+                    ? '<span class="ml-2 inline-flex items-center px-2.5 py-1 rounded-full bg-pink-500/20 text-[10px] font-semibold text-pink-300 border border-pink-400/40">Tracking</span>'
                     : '';
 
-                const extraRing = isTracked ? ' ring-1 ring-emerald-400/70' : '';
+                const extraRing = isTracked ? ' ring-2 ring-pink-400/50' : '';
 
                 return `
                     <div
-                        class="bg-slate-900/80 rounded-2xl border-l-4 ${borderColor} border border-slate-800 cursor-pointer hover:bg-slate-800/90 transition-colors px-4 py-3${extraRing}"
+                        class="train-card glass-card rounded-2xl border-l-4 ${borderColor} cursor-pointer hover:bg-gradient-to-r ${bgGradient} px-5 py-4 hover:shadow-xl${extraRing} animate-slide-in"
+                        style="animation-delay: ${index * 0.05}s;"
                         onclick="trackTrain('${serviceId.replace(/'/g, "\\'")}')"
                     >
-                        <div class="flex items-center justify-between mb-1.5">
-                            <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${bgGradient} border ${borderColor}">
+                                    <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
                                 <div>
-                                    <div class="text-2xl font-semibold text-slate-50 leading-tight">${scheduled || 'TBC'}</div>
+                                    <div class="text-3xl font-bold text-white leading-tight">${scheduled || 'TBC'}</div>
                                     ${expected && expected !== scheduled && !isCancelled ? 
-                                        `<div class="text-xs text-amber-300 font-medium mt-0.5">Exp ${expected}</div>` : ''}
+                                        `<div class="text-xs text-amber-300 font-semibold mt-1">Exp ${expected}</div>` : ''}
                                 </div>
                             </div>
-                            <div class="text-right ${statusColor} text-xs font-semibold tracking-wide uppercase">
+                            <div class="text-right ${statusColor} text-xs font-bold tracking-wide uppercase">
                                 ${status}${trackedBadge}
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300 mt-2">
-                            <div><span class="font-medium text-slate-200">Platform</span> <span class="text-slate-400 ml-1.5">${train.platform || 'TBC'}</span></div>
-                            <div class="text-right"><span class="font-medium text-slate-200">Operator</span> <span class="text-slate-400 ml-1.5">${train.operator || 'Unknown'}</span></div>
+                        <div class="grid grid-cols-2 gap-3 text-xs text-purple-200/70 mt-3 pt-3 border-t border-purple-500/20">
+                            <div><span class="font-semibold text-purple-200">Platform</span> <span class="ml-2">${train.platform || 'TBC'}</span></div>
+                            <div class="text-right"><span class="font-semibold text-purple-200">Operator</span> <span class="ml-2">${train.operator || 'Unknown'}</span></div>
                         </div>
                     </div>
                 `;
@@ -440,14 +562,14 @@
         function showStatus(type, message) {
             const statusMessage = document.getElementById('statusMessage');
             const colors = {
-                success: 'bg-emerald-950/60 border-emerald-700/80 text-emerald-100',
-                error: 'bg-rose-950/60 border-rose-700/80 text-rose-100',
-                warning: 'bg-amber-950/60 border-amber-700/80 text-amber-100',
-                info: 'bg-slate-900/70 border-slate-600 text-slate-100'
+                success: 'bg-pink-950/40 border-pink-700/50 text-pink-100',
+                error: 'bg-red-950/40 border-red-700/50 text-red-100',
+                warning: 'bg-amber-950/40 border-amber-700/50 text-amber-100',
+                info: 'bg-purple-950/40 border-purple-700/50 text-purple-100'
             };
             
-            statusMessage.className = `${colors[type]} border rounded-xl px-3.5 py-2.5 mb-4 text-xs`;
-            statusMessage.innerHTML = `<div>${message}</div>`;
+            statusMessage.className = `${colors[type]} border rounded-2xl px-4 py-3 mb-5 text-sm font-medium glass-effect backdrop-blur-sm`;
+            statusMessage.innerHTML = `<div class="flex items-center gap-2"><span>${message}</span></div>`;
             statusMessage.classList.remove('hidden');
         }
 
