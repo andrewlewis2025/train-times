@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Train Times">
+    
+    <!-- Cache Control - Prevent Caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- App Version - Update this with each deployment to force cache refresh -->
+    <meta name="app-version" content="2.0.0">
+    
     <title>Train Times - Palmers Green</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -208,6 +219,14 @@
                     >
                         <span>🔔</span>
                         <span>Enable alerts</span>
+                    </button>
+                    <button
+                        onclick="clearCacheAndReload()"
+                        class="text-xs text-purple-300 hover:text-purple-200 font-semibold flex items-center gap-2 transition-colors"
+                        title="Clear cache and reload (useful if app looks outdated)"
+                    >
+                        <span>🔄</span>
+                        <span>Force Update</span>
                     </button>
                 </div>
             </div>
@@ -584,6 +603,14 @@
             }
         }
 
+        function clearCacheAndReload() {
+            // Clear version cache to force update check
+            localStorage.removeItem(VERSION_KEY);
+            localStorage.removeItem(LAST_CHECK_KEY);
+            // Force reload with cache bypass
+            window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now() + '&_reload=1';
+        }
+
         function populateHomeStations() {
             const selectEl = document.getElementById('homeStationSelect');
             if (!selectEl) return;
@@ -622,6 +649,107 @@
 
         if ('Notification' in window && Notification.permission === 'granted') {
             document.getElementById('notifyBtn').style.display = 'none';
+        }
+
+        // App Version Management - Force updates on iOS home screen
+        // IMPORTANT: Update APP_VERSION in both the meta tag and here when deploying new changes
+        const APP_VERSION = '2.0.0';
+        const VERSION_KEY = 'train-times-version';
+        const LAST_CHECK_KEY = 'train-times-last-check';
+
+        function checkForUpdates() {
+            // Check if we're in standalone mode (iOS home screen app)
+            const isStandalone = window.navigator.standalone || 
+                                 window.matchMedia('(display-mode: standalone)').matches;
+            
+            if (!isStandalone) {
+                // For regular browser, check every 5 minutes
+                const lastCheck = localStorage.getItem(LAST_CHECK_KEY);
+                const now = Date.now();
+                if (lastCheck && (now - parseInt(lastCheck)) < 300000) {
+                    return; // Checked recently, skip
+                }
+            }
+
+            // Fetch the current page with cache-busting to check version
+            const url = `${window.location.origin}${window.location.pathname}?v=${Date.now()}&_nocache=1`;
+            fetch(url, {
+                method: 'GET',
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            })
+            .then(html => {
+                // Extract version from meta tag
+                const versionMatch = html.match(/<meta\s+name=["']app-version["']\s+content=["']([^"']+)["']>/i);
+                if (versionMatch && versionMatch[1]) {
+                    const serverVersion = versionMatch[1];
+                    const localVersion = localStorage.getItem(VERSION_KEY);
+                    
+                    if (localVersion && localVersion !== serverVersion) {
+                        // New version detected - force reload
+                        console.log(`Update detected: ${localVersion} -> ${serverVersion}`);
+                        localStorage.setItem(VERSION_KEY, serverVersion);
+                        
+                        // Auto-reload in standalone mode, ask in browser
+                        if (isStandalone) {
+                            // In standalone mode, reload immediately
+                            window.location.reload(true);
+                        } else {
+                            // In browser, ask user
+                            if (confirm('A new version is available! Reload now?')) {
+                                window.location.reload(true);
+                            } else {
+                                localStorage.setItem(VERSION_KEY, serverVersion);
+                            }
+                        }
+                    } else if (!localVersion) {
+                        // First time - store current version
+                        localStorage.setItem(VERSION_KEY, APP_VERSION);
+                    }
+                }
+                
+                localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
+            })
+            .catch(error => {
+                console.warn('Update check failed:', error);
+                // Don't spam checks if network is down
+                localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
+            });
+        }
+
+        // Store current version
+        if (!localStorage.getItem(VERSION_KEY)) {
+            localStorage.setItem(VERSION_KEY, APP_VERSION);
+        }
+
+        // Check for updates on load
+        checkForUpdates();
+
+        // Check for updates periodically (every 2 minutes in standalone mode, 5 minutes otherwise)
+        const isStandalone = window.navigator.standalone || 
+                             window.matchMedia('(display-mode: standalone)').matches;
+        const updateCheckInterval = isStandalone ? 120000 : 300000;
+        setInterval(checkForUpdates, updateCheckInterval);
+
+        // Also check when app comes to foreground (iOS specific)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                checkForUpdates();
+            }
+        });
+
+        // Force reload on focus if in standalone mode (iOS)
+        if (isStandalone) {
+            window.addEventListener('focus', () => {
+                checkForUpdates();
+            });
         }
 
         fetchTrains();
