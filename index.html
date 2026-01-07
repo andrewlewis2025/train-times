@@ -15,7 +15,7 @@
     <meta http-equiv="Expires" content="0">
     
     <!-- App Version - Update this with each deployment to force cache refresh -->
-    <meta name="app-version" content="2.0.2">
+    <meta name="app-version" content="2.0.3">
     
     <title>Train Times - Palmers Green</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -262,6 +262,10 @@
         let lastTrainServices = [];
         let trackedServiceID = null;
         let trackedServiceStatus = null;
+        let trackedServiceExpectedTime = null;
+        let trackedServiceDepartNotified = false;
+
+        const DEPARTURE_NOTIFY_MINUTES = 15;
         
         // Great Northern stations on the line to Palmers Green (southbound stations)
         const GREAT_NORTHERN_STATIONS = [
@@ -366,6 +370,61 @@
             return 'onTime';
         }
 
+        function parseDepartureTime(timeString) {
+            if (!timeString || timeString === 'On time' || timeString === 'Delayed') {
+                return null;
+            }
+
+            const parts = timeString.split(':');
+            if (parts.length !== 2) return null;
+
+            const hours = parseInt(parts[0], 10);
+            const minutes = parseInt(parts[1], 10);
+            if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+
+            const now = new Date();
+            const departure = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                hours,
+                minutes,
+                0,
+                0
+            );
+
+            if (departure.getTime() < now.getTime() - 6 * 60 * 60 * 1000) {
+                departure.setDate(departure.getDate() + 1);
+            }
+
+            return departure;
+        }
+
+        function getTrackedDepartureTime(service) {
+            if (!service) return null;
+
+            const scheduled = service.std || service.sta;
+            const expected = service.etd || service.eta;
+            const status = getServiceStatus(service);
+
+            if (status === 'delayed') {
+                return parseDepartureTime(expected) || parseDepartureTime(scheduled);
+            }
+
+            return parseDepartureTime(scheduled);
+        }
+
+        function sendTrackedNotification(title, body) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') {
+                return;
+            }
+
+            new Notification(title, {
+                body,
+                icon: '🚂'
+            });
+        }
+
         async function fetchTrains() {
             const refreshIcon = document.getElementById('refreshIcon');
             const trainList = document.getElementById('trainList');
@@ -437,38 +496,52 @@
 
                 lastTrainServices = services;
 
-                if (trackedServiceID && services.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
+                if (currentMode === 'out' && trackedServiceID && services.length > 0) {
                     const trackedService = services.find(s => (s.serviceID || s.serviceId) === trackedServiceID);
                     if (trackedService) {
                         const newStatus = getServiceStatus(trackedService);
-                        if (trackedServiceStatus && newStatus !== trackedServiceStatus) {
-                            let body = '';
-                            const scheduled = trackedService.std || trackedService.sta;
-                            const expected = trackedService.etd || trackedService.eta;
+                        const scheduled = trackedService.std || trackedService.sta;
+                        const expected = trackedService.etd || trackedService.eta;
 
-                            if (newStatus === 'cancelled') {
-                                body = `Your tracked train at ${scheduled} has been cancelled.`;
-                            } else if (newStatus === 'delayed') {
-                                body = `Your tracked train at ${scheduled} is now delayed (expected ${expected}).`;
-                            } else if (newStatus === 'onTime') {
-                                body = `Your tracked train at ${scheduled} is now showing on time.`;
+                        if (newStatus === 'delayed') {
+                            if (trackedServiceStatus !== 'delayed') {
+                                sendTrackedNotification(
+                                    'Tracked Train Delayed',
+                                    `Your tracked train at ${scheduled} is delayed (expected ${expected}).`
+                                );
+                            } else if (trackedServiceExpectedTime && expected && trackedServiceExpectedTime !== expected) {
+                                sendTrackedNotification(
+                                    'Tracked Train Delay Change',
+                                    `Your tracked train delay has changed (expected ${expected}).`
+                                );
                             }
+                            trackedServiceExpectedTime = expected || trackedServiceExpectedTime;
+                        } else {
+                            trackedServiceExpectedTime = null;
+                        }
 
-                            if (body) {
-                                new Notification('Train status update', {
-                                    body,
-                                    icon: '🚂'
-                                });
+                        const departureTime = getTrackedDepartureTime(trackedService);
+                        if (!trackedServiceDepartNotified && departureTime) {
+                            const minutesUntil = (departureTime.getTime() - Date.now()) / 60000;
+                            if (minutesUntil > 0 && minutesUntil <= DEPARTURE_NOTIFY_MINUTES) {
+                                sendTrackedNotification(
+                                    'Depart now for tracked train',
+                                    `Your tracked train at ${scheduled} departs in ${Math.round(minutesUntil)} minutes.`
+                                );
+                                trackedServiceDepartNotified = true;
                             }
                         }
+
                         trackedServiceStatus = getServiceStatus(trackedService);
                     } else if (trackedServiceStatus) {
-                        new Notification('Train status update', {
-                            body: 'Your tracked train is no longer on the departures board. It may have departed.',
-                            icon: '🚂'
-                        });
+                        sendTrackedNotification(
+                            'Tracked train update',
+                            'Your tracked train is no longer on the departures board. It may have departed.'
+                        );
                         trackedServiceID = null;
                         trackedServiceStatus = null;
+                        trackedServiceExpectedTime = null;
+                        trackedServiceDepartNotified = false;
                     }
                 }
 
@@ -570,11 +643,15 @@
             if (trackedServiceID === serviceId) {
                 trackedServiceID = null;
                 trackedServiceStatus = null;
+                trackedServiceExpectedTime = null;
+                trackedServiceDepartNotified = false;
                 showStatus('info', 'Stopped tracking this train.');
             } else {
                 trackedServiceID = serviceId;
                 trackedServiceStatus = null;
-                showStatus('success', 'Now tracking this train for delays and cancellations.');
+                trackedServiceExpectedTime = null;
+                trackedServiceDepartNotified = false;
+                showStatus('success', 'Now tracking this train for delay alerts.');
             }
 
             if (lastTrainServices && lastTrainServices.length > 0) {
@@ -657,7 +734,7 @@
 
         // App Version Management - Force updates on iOS home screen
         // IMPORTANT: Update APP_VERSION in both the meta tag and here when deploying new changes
-        const APP_VERSION = '2.0.2';
+        const APP_VERSION = '2.0.3';
         const VERSION_KEY = 'train-times-version';
         const LAST_CHECK_KEY = 'train-times-last-check';
 
