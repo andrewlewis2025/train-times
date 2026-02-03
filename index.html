@@ -434,6 +434,43 @@
             });
         }
 
+        async function fetchJsonWithFallback(url) {
+            const candidates = [
+                inputUrl => inputUrl,
+                inputUrl => `https://api.allorigins.win/raw?url=${encodeURIComponent(inputUrl)}`,
+                inputUrl => `https://thingproxy.freeboard.io/fetch/${inputUrl}`,
+                inputUrl => `https://r.jina.ai/http://${inputUrl.replace(/^https?:\/\//, '')}`
+            ];
+
+            let lastError = null;
+
+            for (const buildUrl of candidates) {
+                const attemptUrl = buildUrl(url);
+                try {
+                    const response = await fetch(attemptUrl, { cache: 'no-store' });
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    const contentType = response.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        return await response.json();
+                    }
+
+                    const text = await response.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (parseError) {
+                        throw new Error('Non-JSON response');
+                    }
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            throw lastError || new Error('All data sources failed.');
+        }
+
         async function fetchTrains() {
             const refreshIcon = document.getElementById('refreshIcon');
             const trainList = document.getElementById('trainList');
@@ -498,6 +535,7 @@
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 
                 const data = await response.json();
+                const data = await fetchJsonWithFallback(url);
                 let services = data.trainServices || [];
 
                 if (currentMode === 'home') {
