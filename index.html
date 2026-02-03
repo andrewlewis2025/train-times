@@ -15,7 +15,7 @@
     <meta http-equiv="Expires" content="0">
     
     <!-- App Version - Update this with each deployment to force cache refresh -->
-    <meta name="app-version" content="2.0.3">
+    <meta name="app-version" content="2.0.4">
     
     <title>Train Times - Palmers Green</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -179,19 +179,6 @@
                     </button>
                 </div>
 
-                <!-- HOME mode station selector -->
-                <div id="homeStationSelector" class="mb-4 hidden">
-                    <label for="homeStationSelect" class="block text-xs font-semibold text-purple-300 mb-2 uppercase tracking-wide">
-                        Departing from
-                    </label>
-                    <select
-                        id="homeStationSelect"
-                        class="w-full border border-purple-500/30 rounded-xl px-4 py-3 text-sm glass-card text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500/50 transition-all"
-                    >
-                        <!-- Populated by JavaScript -->
-                    </select>
-                </div>
-                
                 <div class="text-sm mb-4 space-y-2">
                     <div id="routeInfo" class="font-bold text-lg text-white">
                         Palmers Green → Moorgate
@@ -290,22 +277,20 @@
 
         const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
         const MOORGATE = { code: 'MOG', name: 'Moorgate' };
+        const HOME_ADDRESS = '73 Hazelwood Lane, N13 5HE';
+        const MAX_WALK_MINUTES = 15;
 
         function setMode(mode) {
             currentMode = mode;
             const outBtn = document.getElementById('outBtn');
             const homeBtn = document.getElementById('homeBtn');
-            const homeSelector = document.getElementById('homeStationSelector');
-
             if (mode === 'out') {
                 outBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60';
                 homeBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5';
-                homeSelector.classList.add('hidden');
                 document.getElementById('routeInfo').textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
             } else {
                 homeBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60';
                 outBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5';
-                homeSelector.classList.remove('hidden');
             }
             
             fetchTrains();
@@ -320,6 +305,30 @@
                       Math.sin(dLon/2) * Math.sin(dLon/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             return R * c;
+        }
+
+        function getNearestStation(location) {
+            return GREAT_NORTHERN_STATIONS.reduce((closest, station) => {
+                const distance = calculateDistance(location.lat, location.lon, station.lat, station.lon);
+                if (!closest || distance < closest.distance) {
+                    return { ...station, distance };
+                }
+                return closest;
+            }, null);
+        }
+
+        function buildMapsUrl(origin, destination, travelMode) {
+            const params = new URLSearchParams({
+                api: '1',
+                travelmode: travelMode,
+                destination
+            });
+
+            if (origin) {
+                params.set('origin', `${origin.lat},${origin.lon}`);
+            }
+
+            return `https://www.google.com/maps/dir/?${params.toString()}`;
         }
 
         async function getWalkingTime(fromLat, fromLon, toLat, toLon) {
@@ -447,35 +456,42 @@
                     routeInfo.textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
                     url = `https://huxley2.azurewebsites.net/departures/${fromStation}/to/${toStation}/20`;
                 } else {
-                    const selectEl = document.getElementById('homeStationSelect');
-                    const selectedCode = selectEl.value || GREAT_NORTHERN_STATIONS[0].code;
-                    const station = GREAT_NORTHERN_STATIONS.find(s => s.code === selectedCode) || GREAT_NORTHERN_STATIONS[0];
-
-                    fromStation = station.code;
-                    routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
-                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
-
-                    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lon}&travelmode=walking`;
+                    let station = GREAT_NORTHERN_STATIONS.find(s => s.code === 'FPK') || GREAT_NORTHERN_STATIONS[0];
+                    let mapsUrl = buildMapsUrl(null, `${station.lat},${station.lon}`, 'walking');
 
                     try {
                         userLocation = await getUserLocation();
+                        const nearest = getNearestStation(userLocation);
+                        if (nearest) {
+                            station = nearest;
+                        }
+
                         const walkingMins = await getWalkingTime(
                             userLocation.lat, userLocation.lon,
                             station.lat, station.lon
                         );
 
-                        if (walkingMins !== null) {
-                            walkingTimeEl.innerHTML = `🚶 ${walkingMins} min walk to ${station.name} · <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Open in Google Maps</a>`;
+                        if (walkingMins !== null && walkingMins <= MAX_WALK_MINUTES) {
+                            mapsUrl = buildMapsUrl(userLocation, `${station.lat},${station.lon}`, 'walking');
+                            walkingTimeEl.innerHTML = `🚶 ${walkingMins} min walk to ${station.name} (Great Northern) · <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Open walking route</a>`;
+                        } else if (walkingMins !== null) {
+                            mapsUrl = buildMapsUrl(userLocation, `${station.lat},${station.lon}`, 'transit');
+                            walkingTimeEl.innerHTML = `🚌 ${walkingMins} min walk to ${station.name} · <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Get public transport to ${station.name}</a>`;
                         } else {
-                            walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Walking directions to ${station.name} in Google Maps</a>`;
+                            mapsUrl = buildMapsUrl(userLocation, `${station.lat},${station.lon}`, 'transit');
+                            walkingTimeEl.innerHTML = `🚌 <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Get public transport to ${station.name}</a>`;
                         }
 
                         walkingTimeEl.classList.remove('hidden');
                     } catch (locError) {
-                        walkingTimeEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Walking directions to ${station.name} in Google Maps</a>`;
+                        walkingTimeEl.innerHTML = `📍 <a href="${mapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors">Directions to ${station.name}</a> (enable location for best route)`;
                         walkingTimeEl.classList.remove('hidden');
-                        console.warn('Could not get user location for walking time:', locError);
+                        console.warn('Could not get user location for home routing:', locError);
                     }
+
+                    fromStation = station.code;
+                    routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
+                    url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
                 }
 
                 const response = await fetch(url);
@@ -549,8 +565,21 @@
                     displayTrains(services.slice(0, 12));
                     showStatus('success', 'Connected. Showing real time trains from National Rail.');
                 } else {
-                    trainList.innerHTML = '<div class="glass-card rounded-3xl p-12 text-center text-purple-300/60 border-dashed border-2 border-purple-500/20"><p class="text-sm font-medium">No trains currently scheduled</p></div>';
-                    showStatus('warning', 'No trains found for this route.');
+                    if (currentMode === 'home' && userLocation) {
+                        const homeMapsUrl = buildMapsUrl(userLocation, HOME_ADDRESS, 'transit');
+                        trainList.innerHTML = `
+                            <div class="glass-card rounded-3xl p-12 text-center text-purple-300/70 border-dashed border-2 border-purple-500/20">
+                                <p class="text-sm font-medium mb-2">No Great Northern trains right now.</p>
+                                <a href="${homeMapsUrl}" target="_blank" rel="noopener" class="underline text-pink-300 hover:text-pink-200 transition-colors text-xs">
+                                    Use public transport to ${HOME_ADDRESS}
+                                </a>
+                            </div>
+                        `;
+                        showStatus('warning', 'No live Great Northern trains found. Showing public transport route home.');
+                    } else {
+                        trainList.innerHTML = '<div class="glass-card rounded-3xl p-12 text-center text-purple-300/60 border-dashed border-2 border-purple-500/20"><p class="text-sm font-medium">No trains currently scheduled</p></div>';
+                        showStatus('warning', 'No trains found for this route.');
+                    }
                 }
                 
                 document.getElementById('lastUpdate').textContent = 
@@ -692,22 +721,6 @@
             window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now() + '&_reload=1';
         }
 
-        function populateHomeStations() {
-            const selectEl = document.getElementById('homeStationSelect');
-            if (!selectEl) return;
-
-            selectEl.innerHTML = '';
-            GREAT_NORTHERN_STATIONS.forEach(station => {
-                const opt = document.createElement('option');
-                opt.value = station.code;
-                opt.textContent = station.name;
-                if (station.code === 'FPK') {
-                    opt.selected = true;
-                }
-                selectEl.appendChild(opt);
-            });
-        }
-
         document.getElementById('autoRefresh').addEventListener('change', (e) => {
             if (e.target.checked) {
                 autoRefreshInterval = setInterval(fetchTrains, 60000);
@@ -717,15 +730,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            populateHomeStations();
-            const homeSelect = document.getElementById('homeStationSelect');
-            if (homeSelect) {
-                homeSelect.addEventListener('change', () => {
-                    if (currentMode === 'home') {
-                        fetchTrains();
-                    }
-                });
-            }
+            fetchTrains();
         });
 
         if ('Notification' in window && Notification.permission === 'granted') {
@@ -734,7 +739,7 @@
 
         // App Version Management - Force updates on iOS home screen
         // IMPORTANT: Update APP_VERSION in both the meta tag and here when deploying new changes
-        const APP_VERSION = '2.0.3';
+        const APP_VERSION = '2.0.4';
         const VERSION_KEY = 'train-times-version';
         const LAST_CHECK_KEY = 'train-times-last-check';
 
@@ -833,7 +838,6 @@
             });
         }
 
-        fetchTrains();
         autoRefreshInterval = setInterval(fetchTrains, 60000);
     </script>
 </body>
