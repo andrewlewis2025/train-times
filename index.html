@@ -1,3 +1,17 @@
+Fix train times loading issue
+train-times
+
+
+
+Conversation
+Diff
+Logs
+
+index.html
+index.html
++40
+-6
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,6 +30,7 @@
     
     <!-- App Version - Update this with each deployment to force cache refresh -->
     <meta name="app-version" content="2.0.3">
+    <meta name="app-version" content="2.0.5">
     
     <title>Train Times - Palmers Green</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -41,365 +56,7 @@
             50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.5); }
         }
         
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
-        
-        @keyframes gradient-shift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-        
-        @keyframes slide-in {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes train-move {
-            0% { transform: translateX(-100px) rotate(0deg); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateX(100px) rotate(0deg); opacity: 0; }
-        }
-        
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        .animate-pulse-glow {
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-        
-        .animate-gradient {
-            background-size: 200% 200%;
-            animation: gradient-shift 8s ease infinite;
-        }
-        
-        .animate-slide-in {
-            animation: slide-in 0.5s ease-out;
-        }
-        
-        .shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            background-size: 1000px 100%;
-            animation: shimmer 3s infinite;
-        }
-        
-        .train-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .train-card:hover {
-            transform: translateY(-4px) scale(1.02);
-        }
-        
-        .bg-animated {
-            background: linear-gradient(-45deg, #581c87, #4c1d95, #312e81, #1e1b4b);
-            background-size: 400% 400%;
-            animation: gradient-shift 15s ease infinite;
-        }
-        
-        .glass-effect {
-            background: rgba(30, 27, 75, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .glass-card {
-            background: rgba(20, 15, 45, 0.5);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-    </style>
-</head>
-<body class="min-h-screen bg-animated text-slate-100 relative overflow-x-hidden">
-    <!-- Animated background elements -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div class="absolute top-20 left-10 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl animate-float"></div>
-        <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
-        <div class="absolute top-1/2 left-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
-    </div>
-    <div class="max-w-4xl mx-auto p-4 sm:p-6 relative z-10">
-        <!-- Prominent Header Card -->
-        <div class="glass-effect rounded-3xl p-6 sm:p-8 mb-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden">
-            <div class="absolute inset-0 shimmer opacity-30"></div>
-            <div class="relative z-10">
-                <div class="flex items-start justify-between gap-4 mb-6">
-                    <div class="flex items-start gap-4 flex-1 min-w-0">
-                        <div class="flex items-center justify-center w-12 h-12 rounded-2xl bg-pink-500/20 border border-pink-500/40 animate-pulse-glow flex-shrink-0">
-                            <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium text-purple-300 mb-1 tracking-wide">TRAIN TIMES</p>
-                            <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">
-                                Palmers Green
-                            </h1>
-                            <p class="text-sm text-purple-200/80">
-                                Great Northern · Live departures
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onclick="fetchTrains()"
-                        id="refreshBtn"
-                        class="p-3 rounded-2xl border border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 transition-all hover:scale-105 hover:border-pink-500/50 backdrop-blur-sm flex-shrink-0"
-                        aria-label="Refresh trains"
-                    >
-                        <svg id="refreshIcon" class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Mode Toggle Buttons -->
-                <div class="flex gap-2 mb-5 glass-card rounded-2xl p-1.5">
-                    <button
-                        onclick="setMode('out')"
-                        id="outBtn"
-                        class="flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60"
-                    >
-                        OUT
-                    </button>
-                    <button
-                        onclick="setMode('home')"
-                        id="homeBtn"
-                        class="flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5"
-                    >
-                        HOME
-                    </button>
-                </div>
-
-                <!-- HOME mode station selector -->
-                <div id="homeStationSelector" class="mb-4 hidden">
-                    <label for="homeStationSelect" class="block text-xs font-semibold text-purple-300 mb-2 uppercase tracking-wide">
-                        Departing from
-                    </label>
-                    <select
-                        id="homeStationSelect"
-                        class="w-full border border-purple-500/30 rounded-xl px-4 py-3 text-sm glass-card text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500/50 transition-all"
-                    >
-                        <!-- Populated by JavaScript -->
-                    </select>
-                </div>
-                
-                <div class="text-sm mb-4 space-y-2">
-                    <div id="routeInfo" class="font-bold text-lg text-white">
-                        Palmers Green → Moorgate
-                    </div>
-                    <div id="walkingTime" class="text-xs text-pink-300 font-medium hidden"></div>
-                    <div class="flex items-center gap-2 text-xs text-purple-300/70">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        <span id="lastUpdate">Loading...</span>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4 flex-wrap pt-2 border-t border-purple-500/20">
-                    <label class="flex items-center gap-2 cursor-pointer text-xs text-purple-200">
-                        <input type="checkbox" id="autoRefresh" checked class="w-4 h-4 text-pink-500 rounded border-purple-500/30 bg-purple-900/30 focus:ring-pink-500 focus:ring-2">
-                        <span>Auto refresh every minute</span>
-                    </label>
-                    
-                    <button
-                        onclick="requestNotifications()"
-                        id="notifyBtn"
-                        class="ml-auto text-xs text-pink-400 hover:text-pink-300 font-semibold flex items-center gap-2 transition-colors"
-                    >
-                        <span>🔔</span>
-                        <span>Enable alerts</span>
-                    </button>
-                    <button
-                        onclick="clearCacheAndReload()"
-                        class="text-xs text-purple-300 hover:text-purple-200 font-semibold flex items-center gap-2 transition-colors"
-                        title="Clear cache and reload (useful if app looks outdated)"
-                    >
-                        <span>🔄</span>
-                        <span>Force Update</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Status Message -->
-        <div id="statusMessage" class="mb-5 hidden"></div>
-
-        <!-- Train List -->
-        <div id="trainList" class="space-y-4">
-            <div class="glass-card rounded-3xl p-12 text-center text-purple-300/60 border-dashed border-2 border-purple-500/20">
-                <div class="flex flex-col items-center gap-4">
-                    <div class="relative">
-                        <svg class="w-20 h-20 text-purple-500/40 animate-float" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                        <div class="absolute inset-0 bg-pink-500/20 rounded-full blur-xl animate-pulse-glow"></div>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold mb-1">Ready to load train times</p>
-                        <p class="text-xs text-purple-400/60">Click the refresh button above to get started</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let autoRefreshInterval;
-        let currentMode = 'out';
-        let userLocation = null;
-
-        let lastTrainServices = [];
-        let trackedServiceID = null;
-        let trackedServiceStatus = null;
-        let trackedServiceExpectedTime = null;
-        let trackedServiceDepartNotified = false;
-
-        const DEPARTURE_NOTIFY_MINUTES = 15;
-        
-        // Great Northern stations on the line to Palmers Green (southbound stations)
-        const GREAT_NORTHERN_STATIONS = [
-            { code: 'MOG', name: 'Moorgate', lat: 51.5188, lon: -0.0886 },
-            { code: 'OLD', name: 'Old Street', lat: 51.5263, lon: -0.0877 },
-            { code: 'EXR', name: 'Essex Road', lat: 51.5394, lon: -0.1042 },
-            { code: 'HBY', name: 'Highbury & Islington', lat: 51.5461, lon: -0.1038 },
-            { code: 'DRN', name: 'Drayton Park', lat: 51.5531, lon: -0.1117 },
-            { code: 'FPK', name: 'Finsbury Park', lat: 51.5642, lon: -0.1065 },
-            { code: 'HRY', name: 'Harringay', lat: 51.5818, lon: -0.1094 },
-            { code: 'HPY', name: 'Hornsey', lat: 51.5875, lon: -0.1169 },
-            { code: 'ALX', name: 'Alexandra Palace', lat: 51.5978, lon: -0.1197 },
-            { code: 'BVP', name: 'Bowes Park', lat: 51.6021, lon: -0.1196 },
-            { code: 'ARN', name: 'Arnos Grove', lat: 51.6163, lon: -0.1334 },
-            { code: 'WGC', name: 'Winchmore Hill', lat: 51.6341, lon: -0.1008 },
-            { code: 'GAN', name: 'Grange Park', lat: 51.6414, lon: -0.1044 },
-            { code: 'ENF', name: 'Enfield Chase', lat: 51.6527, lon: -0.1047 },
-            { code: 'GNT', name: 'Gordon Hill', lat: 51.6781, lon: -0.0852 },
-            { code: 'CWN', name: 'Crews Hill', lat: 51.6945, lon: -0.0797 },
-            { code: 'CHN', name: 'Cuffley', lat: 51.7086, lon: -0.1021 }
-        ];
-
-        const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
-        const MOORGATE = { code: 'MOG', name: 'Moorgate' };
-
-        function setMode(mode) {
-            currentMode = mode;
-            const outBtn = document.getElementById('outBtn');
-            const homeBtn = document.getElementById('homeBtn');
-            const homeSelector = document.getElementById('homeStationSelector');
-
-            if (mode === 'out') {
-                outBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60';
-                homeBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5';
-                homeSelector.classList.add('hidden');
-                document.getElementById('routeInfo').textContent = `${PALMERS_GREEN.name} → ${MOORGATE.name}`;
-            } else {
-                homeBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-pink-500 text-white shadow-lg shadow-pink-500/40 hover:shadow-pink-500/60';
-                outBtn.className = 'flex-1 py-3 px-5 rounded-xl text-sm font-semibold transition-all bg-transparent text-purple-200 hover:bg-white/5';
-                homeSelector.classList.remove('hidden');
-            }
-            
-            fetchTrains();
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        async function getWalkingTime(fromLat, fromLon, toLat, toLon) {
-            try {
-                const distance = calculateDistance(fromLat, fromLon, toLat, toLon);
-                const walkingMinutes = Math.round((distance * 1000) / 80);
-                return walkingMinutes;
-            } catch (error) {
-                console.error('Error calculating walking time:', error);
-                return null;
-            }
-        }
-
-        async function getUserLocation() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error('Geolocation not supported'));
-                    return;
-                }
-                
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude
-                        });
-                    },
-                    (error) => {
-                        reject(error);
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-                );
-            });
-        }
-
-        function getServiceStatus(service) {
-            if (!service) return null;
-
-            if (service.isCancelled) return 'cancelled';
-
-            const scheduled = service.std || service.sta;
-            const expected = service.etd || service.eta;
-
-            if (expected && expected !== scheduled && expected !== 'On time') {
-                return 'delayed';
-            }
-
-            return 'onTime';
-        }
-
-        function parseDepartureTime(timeString) {
-            if (!timeString || timeString === 'On time' || timeString === 'Delayed') {
-                return null;
-            }
-
-            const parts = timeString.split(':');
-            if (parts.length !== 2) return null;
-
-            const hours = parseInt(parts[0], 10);
-            const minutes = parseInt(parts[1], 10);
-            if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
-
-            const now = new Date();
-            const departure = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
-                hours,
-                minutes,
-                0,
-                0
-            );
-
-            if (departure.getTime() < now.getTime() - 6 * 60 * 60 * 1000) {
-                departure.setDate(departure.getDate() + 1);
-            }
-
-            return departure;
-        }
-
+@@ -403,50 +403,87 @@
         function getTrackedDepartureTime(service) {
             if (!service) return null;
 
@@ -423,6 +80,43 @@
                 body,
                 icon: '🚂'
             });
+        }
+
+        async function fetchJsonWithFallback(url) {
+            const candidates = [
+                inputUrl => inputUrl,
+                inputUrl => `https://api.allorigins.win/raw?url=${encodeURIComponent(inputUrl)}`,
+                inputUrl => `https://thingproxy.freeboard.io/fetch/${inputUrl}`,
+                inputUrl => `https://r.jina.ai/http://${inputUrl.replace(/^https?:\/\//, '')}`
+            ];
+
+            let lastError = null;
+
+            for (const buildUrl of candidates) {
+                const attemptUrl = buildUrl(url);
+                try {
+                    const response = await fetch(attemptUrl, { cache: 'no-store' });
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    const contentType = response.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        return await response.json();
+                    }
+
+                    const text = await response.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (parseError) {
+                        throw new Error('Non-JSON response');
+                    }
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            throw lastError || new Error('All data sources failed.');
         }
 
         async function fetchTrains() {
@@ -450,9 +144,7 @@
                     const selectEl = document.getElementById('homeStationSelect');
                     const selectedCode = selectEl.value || GREAT_NORTHERN_STATIONS[0].code;
                     const station = GREAT_NORTHERN_STATIONS.find(s => s.code === selectedCode) || GREAT_NORTHERN_STATIONS[0];
-
-                    fromStation = station.code;
-                    routeInfo.textContent = `${station.name} → ${PALMERS_GREEN.name}`;
+@@ -456,54 +493,51 @@
                     url = `https://huxley2.azurewebsites.net/departures/${fromStation}/20?expand=true`;
 
                     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lon}&travelmode=walking`;
@@ -482,6 +174,7 @@
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 
                 const data = await response.json();
+                const data = await fetchJsonWithFallback(url);
                 let services = data.trainServices || [];
 
                 if (currentMode === 'home') {
@@ -507,208 +200,7 @@
                             if (trackedServiceStatus !== 'delayed') {
                                 sendTrackedNotification(
                                     'Tracked Train Delayed',
-                                    `Your tracked train at ${scheduled} is delayed (expected ${expected}).`
-                                );
-                            } else if (trackedServiceExpectedTime && expected && trackedServiceExpectedTime !== expected) {
-                                sendTrackedNotification(
-                                    'Tracked Train Delay Change',
-                                    `Your tracked train delay has changed (expected ${expected}).`
-                                );
-                            }
-                            trackedServiceExpectedTime = expected || trackedServiceExpectedTime;
-                        } else {
-                            trackedServiceExpectedTime = null;
-                        }
-
-                        const departureTime = getTrackedDepartureTime(trackedService);
-                        if (!trackedServiceDepartNotified && departureTime) {
-                            const minutesUntil = (departureTime.getTime() - Date.now()) / 60000;
-                            if (minutesUntil > 0 && minutesUntil <= DEPARTURE_NOTIFY_MINUTES) {
-                                sendTrackedNotification(
-                                    'Depart now for tracked train',
-                                    `Your tracked train at ${scheduled} departs in ${Math.round(minutesUntil)} minutes.`
-                                );
-                                trackedServiceDepartNotified = true;
-                            }
-                        }
-
-                        trackedServiceStatus = getServiceStatus(trackedService);
-                    } else if (trackedServiceStatus) {
-                        sendTrackedNotification(
-                            'Tracked train update',
-                            'Your tracked train is no longer on the departures board. It may have departed.'
-                        );
-                        trackedServiceID = null;
-                        trackedServiceStatus = null;
-                        trackedServiceExpectedTime = null;
-                        trackedServiceDepartNotified = false;
-                    }
-                }
-
-                if (services.length > 0) {
-                    displayTrains(services.slice(0, 12));
-                    showStatus('success', 'Connected. Showing real time trains from National Rail.');
-                } else {
-                    trainList.innerHTML = '<div class="glass-card rounded-3xl p-12 text-center text-purple-300/60 border-dashed border-2 border-purple-500/20"><p class="text-sm font-medium">No trains currently scheduled</p></div>';
-                    showStatus('warning', 'No trains found for this route.');
-                }
-                
-                document.getElementById('lastUpdate').textContent = 
-                    'Last updated: ' + new Date().toLocaleTimeString('en-GB');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showStatus('error', `Failed to fetch train times: ${error.message}`);
-                trainList.innerHTML = '<div class="glass-card rounded-3xl p-12 text-center text-red-300 border border-red-500/30"><p class="text-sm font-medium">Failed to load trains. Please try again.</p></div>';
-            } finally {
-                refreshIcon.classList.remove('animate-spin');
-            }
-        }
-
-        function displayTrains(trains) {
-            const trainList = document.getElementById('trainList');
-            trainList.innerHTML = trains.map((train, index) => {
-                const scheduled = train.std || train.sta;
-                const expected = train.etd || train.eta;
-                const isCancelled = train.isCancelled;
-                const isDelayed = expected && expected !== scheduled && expected !== 'On time' && !isCancelled;
-                const serviceId = train.serviceID || train.serviceId || '';
-                const isTracked = serviceId && serviceId === trackedServiceID;
-
-                let status = 'On time';
-                let statusColor = 'text-pink-300';
-                let borderColor = 'border-pink-500/50';
-                let accentColor = 'bg-pink-500';
-                let bgGradient = 'from-pink-500/10 to-purple-500/10';
-
-                if (isCancelled) {
-                    status = 'Cancelled';
-                    statusColor = 'text-red-300';
-                    borderColor = 'border-red-500/50';
-                    accentColor = 'bg-red-500';
-                    bgGradient = 'from-red-500/10 to-rose-500/10';
-                } else if (isDelayed) {
-                    status = 'Delayed';
-                    statusColor = 'text-amber-300';
-                    borderColor = 'border-amber-500/50';
-                    accentColor = 'bg-amber-500';
-                    bgGradient = 'from-amber-500/10 to-yellow-500/10';
-                }
-
-                const trackedBadge = isTracked
-                    ? '<span class="ml-2 inline-flex items-center px-2.5 py-1 rounded-full bg-pink-500/20 text-[10px] font-semibold text-pink-300 border border-pink-400/40">Tracking</span>'
-                    : '';
-
-                const extraRing = isTracked ? ' ring-2 ring-pink-400/50' : '';
-
-                return `
-                    <div
-                        class="train-card glass-card rounded-2xl cursor-pointer hover:bg-gradient-to-r ${bgGradient} px-5 py-4 hover:shadow-xl${extraRing} animate-slide-in relative overflow-hidden"
-                        style="animation-delay: ${index * 0.05}s;"
-                        onclick="trackTrain('${serviceId.replace(/'/g, "\\'")}')"
-                    >
-                        <div class="absolute left-0 top-0 bottom-0 w-1 ${accentColor}"></div>
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-4">
-                                <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${bgGradient} border ${borderColor}">
-                                    <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="text-3xl font-bold text-white leading-tight">${scheduled || 'TBC'}</div>
-                                    ${expected && expected !== scheduled && !isCancelled ? 
-                                        `<div class="text-xs text-amber-300 font-semibold mt-1">Exp ${expected}</div>` : ''}
-                                </div>
-                            </div>
-                            <div class="text-right ${statusColor} text-xs font-bold tracking-wide uppercase">
-                                ${status}${trackedBadge}
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 text-xs text-purple-200/70 mt-3 pt-3 border-t border-purple-500/20">
-                            <div><span class="font-semibold text-purple-200">Platform</span> <span class="ml-2">${train.platform || 'TBC'}</span></div>
-                            <div class="text-right"><span class="font-semibold text-purple-200">Operator</span> <span class="ml-2">${train.operator || 'Unknown'}</span></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function trackTrain(serviceId) {
-            if (!serviceId) {
-                showStatus('warning', 'Cannot track this service because it has no ID.');
-                return;
-            }
-
-            if (trackedServiceID === serviceId) {
-                trackedServiceID = null;
-                trackedServiceStatus = null;
-                trackedServiceExpectedTime = null;
-                trackedServiceDepartNotified = false;
-                showStatus('info', 'Stopped tracking this train.');
-            } else {
-                trackedServiceID = serviceId;
-                trackedServiceStatus = null;
-                trackedServiceExpectedTime = null;
-                trackedServiceDepartNotified = false;
-                showStatus('success', 'Now tracking this train for delay alerts.');
-            }
-
-            if (lastTrainServices && lastTrainServices.length > 0) {
-                displayTrains(lastTrainServices.slice(0, 12));
-            }
-        }
-
-        function showStatus(type, message) {
-            const statusMessage = document.getElementById('statusMessage');
-            const colors = {
-                success: 'bg-pink-950/40 border-pink-700/50 text-pink-100',
-                error: 'bg-red-950/40 border-red-700/50 text-red-100',
-                warning: 'bg-amber-950/40 border-amber-700/50 text-amber-100',
-                info: 'bg-purple-950/40 border-purple-700/50 text-purple-100'
-            };
-            
-            statusMessage.className = `${colors[type]} border rounded-2xl px-4 py-3 mb-5 text-sm font-medium glass-effect backdrop-blur-sm`;
-            statusMessage.innerHTML = `<div class="flex items-center gap-2"><span>${message}</span></div>`;
-            statusMessage.classList.remove('hidden');
-        }
-
-        function requestNotifications() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        document.getElementById('notifyBtn').style.display = 'none';
-                        showStatus('success', 'Notifications enabled. You will be alerted about your tracked train.');
-                    }
-                });
-            }
-        }
-
-        function clearCacheAndReload() {
-            // Clear version cache to force update check
-            localStorage.removeItem(VERSION_KEY);
-            localStorage.removeItem(LAST_CHECK_KEY);
-            // Force reload with cache bypass
-            window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now() + '&_reload=1';
-        }
-
-        function populateHomeStations() {
-            const selectEl = document.getElementById('homeStationSelect');
-            if (!selectEl) return;
-
-            selectEl.innerHTML = '';
-            GREAT_NORTHERN_STATIONS.forEach(station => {
-                const opt = document.createElement('option');
-                opt.value = station.code;
-                opt.textContent = station.name;
-                if (station.code === 'FPK') {
-                    opt.selected = true;
-                }
-                selectEl.appendChild(opt);
-            });
-        }
-
-        document.getElementById('autoRefresh').addEventListener('change', (e) => {
+@@ -712,51 +746,51 @@
             if (e.target.checked) {
                 autoRefreshInterval = setInterval(fetchTrains, 60000);
             } else {
@@ -735,6 +227,7 @@
         // App Version Management - Force updates on iOS home screen
         // IMPORTANT: Update APP_VERSION in both the meta tag and here when deploying new changes
         const APP_VERSION = '2.0.3';
+        const APP_VERSION = '2.0.5';
         const VERSION_KEY = 'train-times-version';
         const LAST_CHECK_KEY = 'train-times-last-check';
 
@@ -760,81 +253,3 @@
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     'Pragma': 'no-cache'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.text();
-            })
-            .then(html => {
-                // Extract version from meta tag
-                const versionMatch = html.match(/<meta\s+name=["']app-version["']\s+content=["']([^"']+)["']>/i);
-                if (versionMatch && versionMatch[1]) {
-                    const serverVersion = versionMatch[1];
-                    const localVersion = localStorage.getItem(VERSION_KEY);
-                    
-                    if (localVersion && localVersion !== serverVersion) {
-                        // New version detected - force reload
-                        console.log(`Update detected: ${localVersion} -> ${serverVersion}`);
-                        localStorage.setItem(VERSION_KEY, serverVersion);
-                        
-                        // Auto-reload in standalone mode, ask in browser
-                        if (isStandalone) {
-                            // In standalone mode, reload immediately
-                            window.location.reload(true);
-                        } else {
-                            // In browser, ask user
-                            if (confirm('A new version is available! Reload now?')) {
-                                window.location.reload(true);
-                            } else {
-                                localStorage.setItem(VERSION_KEY, serverVersion);
-                            }
-                        }
-                    } else if (!localVersion) {
-                        // First time - store current version
-                        localStorage.setItem(VERSION_KEY, APP_VERSION);
-                    }
-                }
-                
-                localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
-            })
-            .catch(error => {
-                console.warn('Update check failed:', error);
-                // Don't spam checks if network is down
-                localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
-            });
-        }
-
-        // Store current version
-        if (!localStorage.getItem(VERSION_KEY)) {
-            localStorage.setItem(VERSION_KEY, APP_VERSION);
-        }
-
-        // Check for updates on load
-        checkForUpdates();
-
-        // Check for updates periodically (every 2 minutes in standalone mode, 5 minutes otherwise)
-        const isStandalone = window.navigator.standalone || 
-                             window.matchMedia('(display-mode: standalone)').matches;
-        const updateCheckInterval = isStandalone ? 120000 : 300000;
-        setInterval(checkForUpdates, updateCheckInterval);
-
-        // Also check when app comes to foreground (iOS specific)
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                checkForUpdates();
-            }
-        });
-
-        // Force reload on focus if in standalone mode (iOS)
-        if (isStandalone) {
-            window.addEventListener('focus', () => {
-                checkForUpdates();
-            });
-        }
-
-        fetchTrains();
-        autoRefreshInterval = setInterval(fetchTrains, 60000);
-    </script>
-</body>
-</html>
