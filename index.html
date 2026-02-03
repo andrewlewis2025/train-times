@@ -15,7 +15,7 @@
     <meta http-equiv="Expires" content="0">
     
     <!-- App Version - Update this with each deployment to force cache refresh -->
-    <meta name="app-version" content="2.0.4">
+    <meta name="app-version" content="2.0.5">
     
     <title>Train Times - Palmers Green</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -281,6 +281,7 @@
         const PALMERS_GREEN = { code: 'PAL', name: 'Palmers Green', lat: 51.6176, lon: -0.1116 };
         const MOORGATE = { code: 'MOG', name: 'Moorgate' };
         const HOME_ADDRESS = '73 Hazelwood Lane, N13 5HE';
+        const HOME_COORDS = { lat: 51.6179, lon: -0.1076 };
         const MAX_WALK_MINUTES = 15;
         const TUBE_STATIONS = [
             { name: 'Arnos Grove', line: 'Piccadilly', lat: 51.6163, lon: -0.1334 },
@@ -401,7 +402,24 @@
             });
         }
 
-        function renderHomeOptions({ location, nearestTrain, nearestTube, trainWalkMins, tubeWalkMins } = {}) {
+        function formatJourneyTime(dateTimeString) {
+            if (!dateTimeString) return '';
+            const date = new Date(dateTimeString);
+            return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getJourneyModes(legs) {
+            const modes = new Set();
+            (legs || []).forEach(leg => {
+                const id = leg?.mode?.id;
+                if (id === 'bus') modes.add('bus');
+                if (id === 'tube') modes.add('tube');
+                if (['national-rail', 'overground', 'elizabeth-line'].includes(id)) modes.add('train');
+            });
+            return Array.from(modes);
+        }
+
+        function renderHomeOptions({ location, nearestTrain, nearestTube, trainWalkMins, tubeWalkMins, journeys, error } = {}) {
             const homeOptions = document.getElementById('homeOptions');
 
             if (currentMode !== 'home') {
@@ -411,11 +429,6 @@
             }
 
             homeOptions.classList.remove('hidden');
-
-            const fastestUrl = buildTransitMapsUrl(location, HOME_ADDRESS);
-            const busUrl = buildTransitMapsUrl(location, HOME_ADDRESS, 'bus');
-            const tubeUrl = buildTransitMapsUrl(location, HOME_ADDRESS, 'subway');
-            const trainUrl = buildTransitMapsUrl(location, HOME_ADDRESS, 'train');
 
             const trainLabel = nearestTrain
                 ? `${nearestTrain.name} (Great Northern)`
@@ -431,58 +444,78 @@
                 ? `${tubeWalkMins} min walk to ${tubeLabel}`
                 : `Walk to ${tubeLabel}`;
 
+            const journeyCards = (journeys || []).slice(0, 3).map(journey => {
+                const modes = getJourneyModes(journey.legs);
+                const badges = modes.map(mode => {
+                    if (mode === 'bus') return '<span class="px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-200 text-[10px] font-semibold">Bus</span>';
+                    if (mode === 'tube') return '<span class="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-semibold">Tube</span>';
+                    if (mode === 'train') return '<span class="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[10px] font-semibold">Train</span>';
+                    return '';
+                }).join('');
+
+                const start = formatJourneyTime(journey.startDateTime);
+                const arrival = formatJourneyTime(journey.arrivalDateTime);
+                const duration = journey.duration ? `${journey.duration} min` : 'Duration n/a';
+                const legSummary = (journey.legs || [])
+                    .map(leg => leg.instruction?.summary || leg.instruction?.detailed || leg.description)
+                    .filter(Boolean)
+                    .slice(0, 3)
+                    .join(' · ');
+
+                return `
+                    <div class="glass-card rounded-2xl p-4 border border-purple-500/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <p class="text-sm font-semibold text-white">${start} → ${arrival}</p>
+                                <p class="text-xs text-purple-300/80">${duration}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-1">${badges}</div>
+                        </div>
+                        <p class="text-xs text-purple-200/80">${legSummary || 'Live journey details available.'}</p>
+                    </div>
+                `;
+            }).join('');
+
+            const journeyState = !location
+                ? `<div class="glass-card rounded-2xl p-4 border border-purple-500/30 text-purple-200 text-sm">Enable location to show live routes home.</div>`
+                : error
+                    ? `<div class="glass-card rounded-2xl p-4 border border-red-500/30 text-red-200 text-sm">Unable to load live routes right now. ${error}</div>`
+                    : journeyCards || `<div class="glass-card rounded-2xl p-4 border border-purple-500/30 text-purple-200 text-sm">Loading live routes…</div>`;
+
             homeOptions.innerHTML = `
                 <div class="glass-effect rounded-2xl p-5 border border-pink-500/20">
                     <div class="flex items-center justify-between mb-3">
                         <div>
                             <p class="text-xs uppercase tracking-[0.2em] text-purple-300/80">Quickest ways home</p>
-                            <h2 class="text-lg font-semibold text-white">Choose the best option right now</h2>
+                            <h2 class="text-lg font-semibold text-white">Live bus, tube, & train options</h2>
                         </div>
                         <span class="text-xs text-pink-300 font-semibold">Citymapper-style</span>
                     </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <a href="${fastestUrl}" target="_blank" rel="noopener" class="glass-card rounded-2xl p-4 hover:shadow-xl transition-all border border-purple-500/30">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center text-pink-300">⚡</div>
-                                <div>
-                                    <p class="text-sm font-semibold text-white">Fastest mix</p>
-                                    <p class="text-xs text-purple-300/80">Bus + tube + train suggestions</p>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="${busUrl}" target="_blank" rel="noopener" class="glass-card rounded-2xl p-4 hover:shadow-xl transition-all border border-purple-500/30">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-200">🚌</div>
-                                <div>
-                                    <p class="text-sm font-semibold text-white">Bus focus</p>
-                                    <p class="text-xs text-purple-300/80">Surface routes to ${HOME_ADDRESS}</p>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="${tubeUrl}" target="_blank" rel="noopener" class="glass-card rounded-2xl p-4 hover:shadow-xl transition-all border border-purple-500/30">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-200">🚇</div>
-                                <div>
-                                    <p class="text-sm font-semibold text-white">Underground focus</p>
-                                    <p class="text-xs text-purple-300/80">${tubeWalkLabel}</p>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="${trainUrl}" target="_blank" rel="noopener" class="glass-card rounded-2xl p-4 hover:shadow-xl transition-all border border-purple-500/30">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-200">🚆</div>
-                                <div>
-                                    <p class="text-sm font-semibold text-white">Train focus</p>
-                                    <p class="text-xs text-purple-300/80">${trainWalkLabel}</p>
-                                </div>
-                            </div>
-                        </a>
+                    <div class="grid gap-3">
+                        ${journeyState}
                     </div>
-                    <p class="text-[11px] text-purple-300/70 mt-3">
-                        Links open Google Maps to show live timings and the quickest routes.
-                    </p>
+                    <div class="mt-3 grid gap-2 sm:grid-cols-2 text-[11px] text-purple-300/70">
+                        <div>🚇 ${tubeWalkLabel}</div>
+                        <div>🚆 ${trainWalkLabel}</div>
+                    </div>
                 </div>
             `;
+        }
+
+        async function fetchHomeJourneys(fromLocation) {
+            const params = new URLSearchParams({
+                fromLat: fromLocation.lat,
+                fromLon: fromLocation.lon,
+                toLat: HOME_COORDS.lat,
+                toLon: HOME_COORDS.lon
+            });
+
+            const response = await fetch(`/api/journeys?${params.toString()}`);
+            if (!response.ok) {
+                throw new Error(`Journey API error: ${response.status}`);
+            }
+
+            return response.json();
         }
 
         function getServiceStatus(service) {
@@ -669,6 +702,29 @@
                         trainWalkMins: walkingMins,
                         tubeWalkMins
                     });
+
+                    if (userLocation) {
+                        try {
+                            const journeyData = await fetchHomeJourneys(userLocation);
+                            renderHomeOptions({
+                                location: userLocation,
+                                nearestTrain: station,
+                                nearestTube,
+                                trainWalkMins: walkingMins,
+                                tubeWalkMins,
+                                journeys: journeyData.journeys
+                            });
+                        } catch (journeyError) {
+                            renderHomeOptions({
+                                location: userLocation,
+                                nearestTrain: station,
+                                nearestTube,
+                                trainWalkMins: walkingMins,
+                                tubeWalkMins,
+                                error: journeyError.message
+                            });
+                        }
+                    }
                 }
                 const data = await fetchJsonWithFallback(url);
                 let services = data.trainServices || [];
@@ -912,7 +968,7 @@
 
         // App Version Management - Force updates on iOS home screen
         // IMPORTANT: Update APP_VERSION in both the meta tag and here when deploying new changes
-        const APP_VERSION = '2.0.4';
+        const APP_VERSION = '2.0.5';
         const VERSION_KEY = 'train-times-version';
         const LAST_CHECK_KEY = 'train-times-last-check';
 

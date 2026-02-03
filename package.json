@@ -1,0 +1,13 @@
+{
+  "name": "train-times",
+  "version": "2.0.5",
+  "description": "Train Times app with home journey proxy",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
